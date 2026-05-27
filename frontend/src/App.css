@@ -385,6 +385,16 @@
   box-shadow: 0 0 0 3px rgba(189, 109, 40, 0.16);
 }
 
+.location-status {
+  grid-column: 1 / -1;
+  padding: 10px 12px;
+  border: 1px solid var(--soft-border);
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 14px;
+  background: rgba(255, 248, 238, 0.62);
+}
+
 .search-form-wide,
 .search-actions {
   grid-column: 1 / -1;

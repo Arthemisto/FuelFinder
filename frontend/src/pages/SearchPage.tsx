@@ -20,18 +20,43 @@ export function SearchPage({ onSearch }: SearchPageProps) {
   const [location, setLocation] = useState('Riga, Latvia')
   const [radiusKm, setRadiusKm] = useState(5)
   const [fuelType, setFuelType] = useState<FuelType>('diesel')
+  const [coordinates, setCoordinates] = useState<{
+    latitude: number
+    longitude: number
+  } | null>(null)
+  const [locationStatus, setLocationStatus] = useState<string | null>(null)
 
   const handleSearch = () => {
     onSearch({
       location,
       radiusKm,
       fuelType,
+      latitude: coordinates?.latitude,
+      longitude: coordinates?.longitude,
     })
   }
 
   const handleUseCurrentLocation = () => {
-    // TODO: use browser geolocation API and convert coordinates into search location.
-    window.alert('Current location support will be added later.')
+    if (!navigator.geolocation) {
+      setLocationStatus('Geolocation is not supported by this browser.')
+      return
+    }
+
+    setLocationStatus('Requesting current location...')
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const latitude = Number(position.coords.latitude.toFixed(5))
+        const longitude = Number(position.coords.longitude.toFixed(5))
+
+        setCoordinates({ latitude, longitude })
+        setLocation('Current location')
+        setLocationStatus(`Location detected: ${latitude}, ${longitude}`)
+      },
+      () => {
+        setLocationStatus('Location permission was denied or unavailable.')
+      },
+    )
   }
 
   return (
@@ -48,7 +73,11 @@ export function SearchPage({ onSearch }: SearchPageProps) {
           <input
             type="text"
             value={location}
-            onChange={(event) => setLocation(event.target.value)}
+            onChange={(event) => {
+              setLocation(event.target.value)
+              setCoordinates(null)
+              setLocationStatus(null)
+            }}
           />
         </label>
 
@@ -79,6 +108,10 @@ export function SearchPage({ onSearch }: SearchPageProps) {
             ))}
           </select>
         </label>
+
+        {locationStatus && (
+          <p className="location-status">{locationStatus}</p>
+        )}
 
         <div className="search-actions">
           <button type="button" className="primary-action" onClick={handleSearch}>

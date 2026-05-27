@@ -4,6 +4,8 @@ export type SearchRequest = {
   location: string
   radiusKm: number
   fuelType: FuelType
+  latitude?: number
+  longitude?: number
 }
 
 export type SearchResult = {
