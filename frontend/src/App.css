@@ -555,6 +555,223 @@
   max-width: 920px;
 }
 
+/* Analytics page */
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  margin-top: 16px;
+}
+
+.analytics-card {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid var(--soft-border);
+  border-radius: 18px;
+  background: rgba(255, 248, 238, 0.78);
+}
+
+.analytics-card h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 20px;
+}
+
+.analytics-meta-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.analytics-meta-row p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.analytics-meta-row strong {
+  color: var(--text);
+  font-size: 15px;
+}
+
+.chart-surface {
+  position: relative;
+  min-height: 190px;
+  overflow: hidden;
+  border: 1px solid rgba(200, 168, 132, 0.7);
+  border-radius: 16px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0,
+      transparent calc(25% - 1px),
+      rgba(107, 63, 31, 0.14) 25%
+    ),
+    repeating-linear-gradient(
+      180deg,
+      transparent 0,
+      transparent 37px,
+      rgba(107, 63, 31, 0.12) 38px
+    ),
+    linear-gradient(180deg, rgba(255, 248, 238, 0.72), rgba(244, 221, 194, 0.54));
+}
+
+.chart-line {
+  position: absolute;
+  left: 9%;
+  right: 9%;
+  height: 4px;
+  border-radius: 999px;
+  z-index: 2;
+}
+
+.chart-line-red {
+  top: 40%;
+  background: #d9291c;
+  transform: rotate(-7deg);
+}
+
+.chart-line-blue {
+  top: 62%;
+  background: #1e55c8;
+  transform: rotate(6deg);
+}
+
+.chart-line-green {
+  top: 26%;
+  background: #1f7a34;
+  transform: rotate(8deg);
+}
+
+.chart-line-orange {
+  top: 52%;
+  background: #d9822b;
+  transform: rotate(-2deg);
+}
+
+.chart-line-brown {
+  top: 56%;
+  background: #8a4a16;
+  transform: rotate(3deg);
+}
+
+.chart-line-purple {
+  top: 70%;
+  background: #7b4bb2;
+  transform: rotate(-4deg);
+}
+
+.chart-surface-forecast .chart-line-red {
+  top: 44%;
+  transform: rotate(4deg);
+}
+
+.chart-surface-forecast .chart-line-blue {
+  top: 66%;
+  transform: rotate(-5deg);
+}
+
+.chart-surface-forecast .chart-line-green {
+  top: 34%;
+  transform: rotate(-3deg);
+}
+
+.chart-surface-forecast .chart-line-orange {
+  top: 52%;
+  transform: rotate(2deg);
+}
+
+.chart-date-grid {
+  position: absolute;
+  inset: auto 5% 8px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  color: var(--muted);
+  font-size: 12px;
+  z-index: 1;
+}
+
+.chart-date-grid-forecast {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.chart-date-grid span {
+  text-align: center;
+}
+
+.fuel-update-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fuel-update-list li {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 3px 8px;
+  align-items: center;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.fuel-update-list strong {
+  color: var(--text);
+}
+
+.fuel-update-list li > span:last-child {
+  grid-column: 2;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.15;
+}
+
+.fuel-swatch {
+  display: inline-block;
+  width: 24px;
+  height: 4px;
+  border-radius: 999px;
+}
+
+.fuel-swatch-red {
+  background: #d9291c;
+}
+
+.fuel-swatch-blue {
+  background: #1e55c8;
+}
+
+.fuel-swatch-green {
+  background: #1f7a34;
+}
+
+.fuel-swatch-orange {
+  background: #d9822b;
+}
+
+.fuel-swatch-brown {
+  background: #8a4a16;
+}
+
+.fuel-swatch-purple {
+  background: #7b4bb2;
+}
+
+.forecast-note {
+  align-self: start;
+  max-width: 520px;
+  padding: 12px 14px;
+  border: 3px solid rgb(221, 14, 7);
+  border-radius: 12px;
+  color: var(--muted);
+  background: rgba(255, 248, 238, 0.62);
+}
+
 /* Responsive */
 
 @media (max-width: 980px) {
@@ -568,7 +785,8 @@
   .top-row,
   .navigation,
   .search-form,
-  .results-list {
+  .results-list,
+  .analytics-grid {
     grid-template-columns: 1fr;
   }
 
@@ -582,6 +800,7 @@
     min-height: 360px;
     padding: 28px;
   }
+
   .map-page-header {
     display: grid;
   }
