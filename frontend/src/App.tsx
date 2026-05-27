@@ -37,7 +37,7 @@ function App() {
     }
 
     if (activePage === 'results') {
-      return <ResultsPage />
+      return <ResultsPage onShowOnMap={handleShowStationOnMap} />
     }
 
     if (activePage === 'map') {

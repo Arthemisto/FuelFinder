@@ -3,6 +3,10 @@ import { useState } from 'react'
 import { StationCard } from '../components/shared/StationCard'
 import { stations } from '../data/stations'
 
+type ResultsPageProps = {
+  onShowOnMap: (stationId: number) => void
+}
+
 type ResultMode = 'cheapest' | 'nearest' | 'bestValue'
 
 const resultModes: { mode: ResultMode; label: string }[] = [
@@ -32,7 +36,7 @@ const bestValueStations = [...stations]
   })
   .slice(0, 3)
 
-export function ResultsPage() {
+export function ResultsPage({ onShowOnMap }: ResultsPageProps) {
   const [activeMode, setActiveMode] = useState<ResultMode>('cheapest')
 
   const activeStations =
@@ -69,7 +73,12 @@ export function ResultsPage() {
 
       <div className="results-list">
         {activeStations.map((station, index) => (
-          <StationCard key={station.id} station={station} rank={index + 1} />
+          <StationCard
+            key={station.id}
+            station={station}
+            rank={index + 1}
+            onShowOnMap={onShowOnMap}
+          />
         ))}
       </div>
     </section>
