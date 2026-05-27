@@ -8,12 +8,15 @@ import { ResultsPage } from './pages/ResultsPage'
 import { SearchPage } from './pages/SearchPage'
 import { StationsPage } from './pages/StationsPage'
 import type { PageName } from './types/page'
+import type { SearchRequest } from './types/search'
 
 function App() {
   const [activePage, setActivePage] = useState<PageName>('search')
   const [selectedStationId, setSelectedStationId] = useState<number | null>(null)
+  const [searchRequest, setSearchRequest] = useState<SearchRequest | null>(null)
 
-  const handleSearch = () => {
+  const handleSearch = (request: SearchRequest) => {
+    setSearchRequest(request)
     setSelectedStationId(null)
     setActivePage('results')
   }
@@ -37,7 +40,12 @@ function App() {
     }
 
     if (activePage === 'results') {
-      return <ResultsPage onShowOnMap={handleShowStationOnMap} />
+      return (
+        <ResultsPage
+          searchRequest={searchRequest}
+          onShowOnMap={handleShowStationOnMap}
+        />
+      )
     }
 
     if (activePage === 'map') {

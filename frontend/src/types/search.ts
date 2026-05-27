@@ -1,13 +1,9 @@
 import type { FuelType, Station } from './station'
 
-export type SortPreference = 'bestValue' | 'cheapest' | 'nearest'
-
 export type SearchRequest = {
-  latitude: number
-  longitude: number
+  location: string
   radiusKm: number
   fuelType: FuelType
-  sortPreference: SortPreference
 }
 
 export type SearchResult = {

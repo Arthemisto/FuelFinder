@@ -2,8 +2,11 @@ import { useState } from 'react'
 
 import { StationCard } from '../components/shared/StationCard'
 import { stations } from '../data/stations'
+import type { SearchRequest } from '../types/search'
+import type { Station } from '../types/station'
 
 type ResultsPageProps = {
+  searchRequest: SearchRequest | null
   onShowOnMap: (stationId: number) => void
 }
 
@@ -15,36 +18,37 @@ const resultModes: { mode: ResultMode; label: string }[] = [
   { mode: 'bestValue', label: 'Best value' },
 ]
 
-const cheapestStations = [...stations]
-  .sort((firstStation, secondStation) => firstStation.price - secondStation.price)
-  .slice(0, 3)
+function getBestValueScore(station: Station) {
+  return station.price + station.distanceKm * 0.01
+}
 
-const nearestStations = [...stations]
-  .sort(
-    (firstStation, secondStation) =>
-      firstStation.distanceKm - secondStation.distanceKm,
-  )
-  .slice(0, 3)
+function getTopStations(filteredStations: Station[], mode: ResultMode) {
+  const sortedStations = [...filteredStations].sort((firstStation, secondStation) => {
+    if (mode === 'cheapest') {
+      return firstStation.price - secondStation.price
+    }
 
-const bestValueStations = [...stations]
-  .sort((firstStation, secondStation) => {
-    const firstStationScore = firstStation.price + firstStation.distanceKm * 0.01
-    const secondStationScore =
-      secondStation.price + secondStation.distanceKm * 0.01
+    if (mode === 'nearest') {
+      return firstStation.distanceKm - secondStation.distanceKm
+    }
 
-    return firstStationScore - secondStationScore
+    return getBestValueScore(firstStation) - getBestValueScore(secondStation)
   })
-  .slice(0, 3)
 
-export function ResultsPage({ onShowOnMap }: ResultsPageProps) {
+  return sortedStations.slice(0, 3)
+}
+
+export function ResultsPage({
+  searchRequest,
+  onShowOnMap,
+}: ResultsPageProps) {
   const [activeMode, setActiveMode] = useState<ResultMode>('cheapest')
 
-  const activeStations =
-    activeMode === 'cheapest'
-      ? cheapestStations
-      : activeMode === 'nearest'
-        ? nearestStations
-        : bestValueStations
+  const filteredStations = searchRequest
+    ? stations.filter((station) => station.fuelType === searchRequest.fuelType)
+    : stations
+
+  const activeStations = getTopStations(filteredStations, activeMode)
 
   return (
     <section className="page-content results-page">
@@ -53,6 +57,14 @@ export function ResultsPage({ onShowOnMap }: ResultsPageProps) {
         Choose how to compare stations and review the top matching options for
         the current search.
       </p>
+
+      {searchRequest && (
+        <div className="search-summary">
+          <span>{searchRequest.location}</span>
+          <span>{searchRequest.radiusKm} km radius</span>
+          <span>{searchRequest.fuelType}</span>
+        </div>
+      )}
 
       <div className="result-mode-buttons">
         {resultModes.map((item) => (
@@ -71,16 +83,20 @@ export function ResultsPage({ onShowOnMap }: ResultsPageProps) {
         ))}
       </div>
 
-      <div className="results-list">
-        {activeStations.map((station, index) => (
-          <StationCard
-            key={station.id}
-            station={station}
-            rank={index + 1}
-            onShowOnMap={onShowOnMap}
-          />
-        ))}
-      </div>
+      {activeStations.length > 0 ? (
+        <div className="results-list">
+          {activeStations.map((station, index) => (
+            <StationCard
+              key={station.id}
+              station={station}
+              rank={index + 1}
+              onShowOnMap={onShowOnMap}
+            />
+          ))}
+        </div>
+      ) : (
+        <p>No stations found for this fuel type in the mock dataset.</p>
+      )}
     </section>
   )
 }

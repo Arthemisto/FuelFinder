@@ -370,6 +370,22 @@
 
 /* Results page */
 
+.search-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.search-summary span {
+  padding: 8px 12px;
+  border: 1px solid var(--soft-border);
+  border-radius: 999px;
+  color: var(--text);
+  font-size: 14px;
+  background: rgba(255, 248, 238, 0.68);
+}
+
 .result-mode-buttons {
   display: flex;
   flex-wrap: wrap;
