@@ -35,12 +35,13 @@ ResultsPage
   -> Directions opens Google Maps route in a new tab
 
 MapPage
-  -> shows mock map preview
+  -> shows Leaflet/OpenStreetMap map
   -> highlights selected station in red
   -> Open list view opens StationsPage
 
 StationsPage
   -> shows all mock stations in a table
+  -> user can filter by text, fuel type, and brand
   -> Map opens MapPage with selected station highlighted
 
 AnalyticsPage
@@ -73,7 +74,7 @@ src/data/stations.ts
   -> ResultsPage filters stations by fuelType
   -> ResultsPage sorts top stations by active comparison mode
   -> MapPage highlights selected station
-  -> StationsPage displays all stations
+  -> StationsPage displays and filters all stations
   -> AnalyticsPage derives fuel update summaries
 ```
 
@@ -166,20 +167,20 @@ Purpose:
 Current content:
 - page title: `Station map`;
 - number of stations shown in preview;
-- mock map surface;
-- mock station markers;
+- Leaflet map;
+- OpenStreetMap tile layer;
+- station markers from mock coordinates;
 - `Open list view` button;
 - map/source note.
 
 Current behavior:
-- markers are positioned visually with CSS, not real coordinates;
+- markers use mock station latitude and longitude;
 - selected station marker is highlighted in red;
 - if no station is selected, first preview stations are highlighted;
 - `Open list view` opens StationsPage.
 
 Future behavior:
-- use Leaflet with OpenStreetMap tiles;
-- show real markers from station coordinates;
+- replace mock station coordinates with backend station data;
 - highlight selected station from ResultsPage or StationsPage;
 - keep OpenStreetMap attribution visible.
 
@@ -223,6 +224,9 @@ Purpose:
 
 Current content:
 - page title: `All stations`;
+- text search input;
+- fuel type select;
+- brand filter chips;
 - station table;
 - station name and brand;
 - address;
@@ -232,11 +236,14 @@ Current content:
 
 Current behavior:
 - shows all mock station rows;
+- filters by name, city, or address text;
+- filters by exact fuel type;
+- filters by exact brand;
+- combines active filters with AND logic;
 - `Map` button selects station and opens MapPage.
 
 Future behavior:
 - fetch all stations from backend;
-- add filtering by fuel type or city;
 - add pagination or internal scroll if dataset grows.
 
 ## Shared Types
@@ -310,6 +317,7 @@ flowchart TD
   ResultsPage -->|filters by fuelType| MockStations["Mock station data"]
   ResultsPage -->|Map stationId| App
   StationsPage -->|Map stationId| App
+  StationsPage -->|text, fuel, brand filters| MockStations
   App -->|selectedStationId| MapPage
   MapPage -->|Open list view| StationsPage
   StationCard -->|Directions| GoogleMaps["Google Maps directions"]
@@ -344,9 +352,10 @@ Completed:
 4. Add mock station data.
 5. Build ResultsPage with fuel filtering.
 6. Build StationsPage table.
-7. Build MapPage placeholder and station highlighting.
+7. Build MapPage with Leaflet and station highlighting.
 8. Build AnalyticsPage mock history and forecast.
 9. Add map/directions interactions.
+10. Add station table filters.
 
 Next:
 1. Responsive layout pass.

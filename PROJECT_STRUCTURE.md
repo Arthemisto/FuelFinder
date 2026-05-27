@@ -17,9 +17,10 @@ Implemented:
 - mock station dataset;
 - fuel type filtering in results;
 - top station comparison modes;
-- station table;
-- map preview with station selection;
+- station table with frontend filters;
+- Leaflet/OpenStreetMap map with station selection;
 - Directions buttons that open Google Maps;
+- Lucide icons across header, navigation, and station actions;
 - analytics history/forecast preview;
 - database status placeholder.
 
@@ -27,7 +28,6 @@ Not implemented yet:
 - backend API;
 - real SQLite connection;
 - real geocoding;
-- real map tiles / Leaflet;
 - real price history forecast calculation.
 
 ## Frontend Component Structure
@@ -161,18 +161,23 @@ Current behavior:
 - `Directions` opens Google Maps directions using station coordinates.
 
 ### MapPage
-Station map preview screen.
+Station map screen.
 
 Shows:
-- mock map surface;
+- Leaflet map with OpenStreetMap tiles;
 - station markers;
 - red highlight for selected station;
 - first 3 preview stations highlighted when no station is selected;
 - button to open the station list.
 
+Current behavior:
+- renders all mock stations by latitude and longitude;
+- keeps OpenStreetMap attribution visible;
+- uses normal browser tile caching only.
+
 Future behavior:
-- replace CSS preview with Leaflet and OpenStreetMap tiles;
-- use real station coordinates from backend data.
+- replace mock station data with backend station coordinates;
+- consider a dedicated tile provider for public production use.
 
 ### AnalyticsPage
 Fuel price analytics screen.
@@ -201,7 +206,16 @@ Shows:
 
 Current behavior:
 - uses mock station data;
+- filters table by station text search;
+- filters table by fuel type;
+- filters table by brand chips;
 - `Map` opens MapPage and highlights the selected station.
+
+Current filter logic:
+- text query checks station name, city, and address;
+- fuel type select matches exact `FuelType`;
+- brand chip matches exact station brand;
+- all active filters are combined with AND logic.
 
 ## Shared Components
 
@@ -481,13 +495,14 @@ Completed:
 5. Build SearchPage form.
 6. Build ResultsPage comparison.
 7. Build StationsPage table.
-8. Build MapPage preview and selection.
+8. Build MapPage with Leaflet and station selection.
 9. Build AnalyticsPage mock trends.
 10. Add local search filtering by fuel type.
+11. Add station table filters by text, fuel type, and brand.
+12. Add Lucide icons.
 
 Next:
 1. Responsive layout pass.
 2. Documentation cleanup for coursework report.
 3. Backend API and SQLite database.
 4. Replace mock data with API calls.
-5. Replace map preview with Leaflet/OpenStreetMap.
