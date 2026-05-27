@@ -516,81 +516,48 @@
   border-radius: 14px;
 }
 
-.map-surface {
-  position: relative;
-  min-height: 330px;
+.leaflet-map-shell {
+  min-height: 360px;
   margin-top: 18px;
   overflow: hidden;
   border: 1px solid var(--soft-border);
   border-radius: 18px;
-  background:
-    linear-gradient(135deg, rgba(245, 227, 200, 0.82), rgba(255, 248, 238, 0.9)),
-    repeating-linear-gradient(
-      90deg,
-      rgba(107, 63, 31, 0.08) 0,
-      rgba(107, 63, 31, 0.08) 1px,
-      transparent 1px,
-      transparent 70px
-    ),
-    repeating-linear-gradient(
-      180deg,
-      rgba(107, 63, 31, 0.08) 0,
-      rgba(107, 63, 31, 0.08) 1px,
-      transparent 1px,
-      transparent 70px
-    );
 }
 
-.map-surface::before {
-  content: '';
-  position: absolute;
-  inset: 18% -8% auto;
-  height: 82px;
-  transform: rotate(-8deg);
-  border-radius: 999px;
-  background: rgba(125, 169, 143, 0.32);
+.leaflet-map {
+  width: 100%;
+  min-height: 360px;
 }
 
-.map-surface::after {
-  content: '';
-  position: absolute;
-  inset: auto -10% 18%;
-  height: 70px;
-  transform: rotate(6deg);
-  border-radius: 999px;
-  background: rgba(118, 158, 191, 0.24);
+.leaflet-station-marker-shell {
+  background: transparent;
+  border: none;
 }
 
-.map-marker {
-  position: absolute;
-  z-index: 1;
+.leaflet-station-marker {
   display: grid;
   place-items: center;
   width: 34px;
   height: 34px;
-  padding: 0;
   border: 2px solid #fff8ee;
   border-radius: 999px;
   color: #fff8ee;
   font-weight: 700;
+  font-size: 13px;
   background: var(--accent-dark);
-  box-shadow: 0 6px 14px rgba(43, 29, 19, 0.26);
+  box-shadow: 0 6px 14px rgba(43, 29, 19, 0.32);
 }
 
-.map-marker-highlighted {
+.leaflet-station-marker-highlighted {
   background: #d94a3a;
   box-shadow:
     0 0 0 4px rgba(217, 74, 58, 0.18),
-    0 8px 18px rgba(43, 29, 19, 0.3);
+    0 8px 18px rgba(43, 29, 19, 0.34);
 }
 
-.map-marker:hover {
-  transform: translateY(-2px);
-}
-
-.map-marker span {
-  color: inherit;
-  font-size: 13px;
+.leaflet-popup-content {
+  color: var(--text);
+  font-family: var(--font-body);
 }
 
 .map-note {
