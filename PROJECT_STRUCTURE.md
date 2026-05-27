@@ -3,17 +3,40 @@
 ## Purpose
 FuelFinderNew is the simplified coursework version of Fuel Finder.
 
-The first goal is to build a clear React frontend based on the UI concepts.
-Backend, database, and real API integration will be added later.
+The current goal is to build a clear React frontend based on the UI concepts.
+The project currently uses mock station data in the frontend. Backend, database,
+and real API integration will be added later.
+
+## Current Frontend Status
+
+Implemented:
+- React + Vite frontend;
+- 5 main pages;
+- shared visual shell based on the UI concepts;
+- controlled search form;
+- mock station dataset;
+- fuel type filtering in results;
+- top station comparison modes;
+- station table;
+- map preview with station selection;
+- Directions buttons that open Google Maps;
+- analytics history/forecast preview;
+- database status placeholder.
+
+Not implemented yet:
+- backend API;
+- real SQLite connection;
+- real geocoding;
+- real map tiles / Leaflet;
+- real price history forecast calculation.
 
 ## Frontend Component Structure
-
-The React application will be split into layout components, pages, and shared UI components.
 
 ```text
 App
   AppLayout
     Header
+    CredentialsCard
     Navigation
     StatusPanel
     PageContainer
@@ -26,7 +49,6 @@ Pages:
   StationsPage
 
 Shared:
-  NavButton
   StationCard
   StationTable
   StatusCard
@@ -38,26 +60,42 @@ Shared:
 Main application entry component.
 
 Responsibilities:
-- starts the React app structure;
-- connects the main layout;
-- later connects routing between pages.
+- stores the active page;
+- stores the current search request;
+- stores the selected station id for map highlighting;
+- connects page-level callbacks;
+- renders the active page inside `AppLayout`.
+
+Current state:
+
+```ts
+activePage: PageName
+selectedStationId: number | null
+searchRequest: SearchRequest | null
+```
 
 ### AppLayout
 Shared page frame used by all screens.
 
 Responsibilities:
 - creates the main brown outer shell;
-- places the header area;
-- places the navigation;
-- renders the current page inside the content area.
+- places the header row;
+- places the navigation row;
+- renders the current page inside the content panel.
 
 ### Header
 Top-left identity block.
 
 Responsibilities:
-- shows fuel icon;
-- shows project title;
-- shows short subtitle.
+- shows the Fuel Finder title;
+- shows the short subtitle.
+
+### CredentialsCard
+Coursework identity block.
+
+Responsibilities:
+- shows developer information;
+- can be removed or redesigned later if not needed.
 
 ### Navigation
 Main page navigation.
@@ -65,22 +103,26 @@ Main page navigation.
 Responsibilities:
 - shows buttons for all main pages;
 - highlights the active page;
-- later changes the current route.
+- calls `onPageChange` when the user changes page.
 
 ### StatusPanel
 Top-right project status area.
 
 Responsibilities:
 - shows version;
-- shows database indicator;
-- shows latest update timestamp.
+- shows database indicator placeholder;
+- shows latest update timestamp placeholder.
+
+Current note:
+- the red database indicator is not connected to a real database yet.
 
 ### PageContainer
 Inner cream content panel.
 
 Responsibilities:
 - wraps each page in the same visual style;
-- keeps page spacing consistent.
+- keeps page spacing consistent;
+- scrolls internal page content when needed.
 
 ## Page Responsibilities
 
@@ -88,84 +130,127 @@ Responsibilities:
 Main search form.
 
 Fields:
-- latitude;
-- longitude;
+- location;
 - radius;
-- fuel type;
-- sort preference.
+- fuel type.
 
-Main action:
-- find stations.
+Main actions:
+- `Find stations` sends a `SearchRequest` to `App`;
+- `Use current location` is a placeholder for future browser geolocation logic.
+
+Current behavior:
+- controlled React state is used for form values;
+- submitting the form opens `ResultsPage`.
 
 ### ResultsPage
 Comparison results screen.
 
 Shows:
-- cheapest station;
-- nearest station;
-- best-value station;
-- search values summary;
-- simple price trend preview.
+- current search summary;
+- comparison mode buttons:
+  - Cheapest;
+  - Nearest;
+  - Best value;
+- top 3 stations for the active comparison mode;
+- station cards with `Map` and `Directions` actions.
+
+Current behavior:
+- filters mock stations by selected fuel type;
+- sorts filtered stations by price, distance, or best-value score;
+- `Map` opens MapPage and highlights the selected station;
+- `Directions` opens Google Maps directions using station coordinates.
 
 ### MapPage
-Station map screen.
+Station map preview screen.
 
 Shows:
-- map area;
+- mock map surface;
 - station markers;
-- number of stations on map;
-- link or button to list view.
+- red highlight for selected station;
+- first 3 preview stations highlighted when no station is selected;
+- button to open the station list.
+
+Future behavior:
+- replace CSS preview with Leaflet and OpenStreetMap tiles;
+- use real station coordinates from backend data.
 
 ### AnalyticsPage
 Fuel price analytics screen.
 
 Shows:
-- historical fuel trends;
-- simple forecast;
-- fuel type comparison.
+- history chart preview;
+- forecast chart preview;
+- fuel type legend based on current mock station data;
+- latest update dates from the mock dataset;
+- forecast disclaimer.
+
+Current forecast decision:
+- the current chart is a visual mock;
+- the planned real algorithm is a 3-day simple linear trend forecast based on recent price history.
 
 ### StationsPage
 All stations table.
 
 Shows:
 - station name;
+- brand;
 - address;
+- map action;
 - price;
-- last update;
-- map action.
+- last update.
+
+Current behavior:
+- uses mock station data;
+- `Map` opens MapPage and highlights the selected station.
 
 ## Shared Components
-
-### NavButton
-Reusable navigation button.
-
-Props planned:
-- label;
-- icon;
-- active;
-- target route.
 
 ### StationCard
 Reusable station summary card.
 
 Used by:
-- ResultsPage;
-- MapPage popups or side panels.
+- ResultsPage.
+
+Props:
+- station;
+- optional rank;
+- optional map selection callback.
+
+Actions:
+- `Map` selects a station and opens MapPage;
+- `Directions` opens Google Maps directions in a new tab.
 
 ### StationTable
 Reusable table for station lists.
 
 Used by:
-- StationsPage;
-- possible search result list.
+- StationsPage.
+
+Props:
+- station list;
+- optional map selection callback.
 
 ### StatusCard
-Reusable small information card.
+Planned reusable small information card.
 
-Used by:
-- Header/status area;
-- search summary;
-- result summaries.
+Current note:
+- status-like information is currently implemented directly in `StatusPanel`.
+
+## Type Files
+
+```text
+src/types/page.ts
+src/types/station.ts
+src/types/search.ts
+```
+
+## Data Files
+
+```text
+src/data/stations.ts
+```
+
+The current data file contains mock station records for frontend development.
 
 ## Domain Model
 
@@ -183,6 +268,8 @@ RankingStrategy
 NearestRankingStrategy
 CheapestRankingStrategy
 BestValueRankingStrategy
+ForecastStrategy
+LinearTrendForecastStrategy
 ```
 
 ## Domain Class Responsibilities
@@ -195,18 +282,25 @@ Fields:
 - name;
 - brand;
 - address;
+- city;
 - latitude;
 - longitude;
-- active status.
+- fuel type;
+- current price;
+- currency;
+- distance;
+- latest update time.
 
 ### FuelType
 Represents one fuel type.
 
-Examples:
+Current frontend values:
 - diesel;
-- petrol 95;
-- petrol 98;
-- LPG.
+- petrol95;
+- petrol98;
+- lpg;
+- diesel plus;
+- electric.
 
 ### PriceRecord
 Represents one fuel price entry for one station.
@@ -221,12 +315,15 @@ Fields:
 ### SearchRequest
 Represents user search input.
 
-Fields:
+Current fields:
+- location;
+- radiusKm;
+- fuelType.
+
+Future backend fields may include:
 - latitude;
 - longitude;
-- radius;
-- fuel type;
-- sort preference.
+- geocoding source.
 
 ### SearchResult
 Represents search output.
@@ -252,12 +349,30 @@ Ranks stations by fuel price.
 ### BestValueRankingStrategy
 Ranks stations by combined price and distance.
 
-## Component Diagram Draft
+Current frontend score idea:
+
+```text
+price + distanceKm * 0.01
+```
+
+### ForecastStrategy
+Interface or abstract base for future forecast algorithms.
+
+### LinearTrendForecastStrategy
+Planned 3-day forecast strategy.
+
+Idea:
+- read recent price history;
+- calculate average daily price change;
+- estimate next 3 days from latest known price.
+
+## Component Diagram
 
 ```mermaid
 flowchart TD
   App --> AppLayout
   AppLayout --> Header
+  AppLayout --> CredentialsCard
   AppLayout --> Navigation
   AppLayout --> StatusPanel
   AppLayout --> PageContainer
@@ -268,14 +383,18 @@ flowchart TD
   PageContainer --> AnalyticsPage
   PageContainer --> StationsPage
 
-  Navigation --> NavButton
+  SearchPage --> SearchRequest
   ResultsPage --> StationCard
+  ResultsPage --> SearchRequest
+  MapPage --> SelectedStationId
   StationsPage --> StationTable
-  Header --> StatusCard
-  StatusPanel --> StatusCard
+  AnalyticsPage --> MockStationData
+
+  StationCard --> GoogleMapsDirections
+  StationTable --> SelectedStationId
 ```
 
-## Class Diagram Draft
+## Class Diagram
 
 ```mermaid
 classDiagram
@@ -284,15 +403,24 @@ classDiagram
     +string name
     +string brand
     +string address
+    +string city
     +number latitude
     +number longitude
-    +boolean isActive
+    +FuelType fuelType
+    +number price
+    +string currency
+    +number distanceKm
+    +string lastUpdate
   }
 
   class FuelType {
-    +number id
-    +string name
-    +string code
+    <<type>>
+    diesel
+    petrol95
+    petrol98
+    lpg
+    dieselPlus
+    electric
   }
 
   class PriceRecord {
@@ -305,11 +433,9 @@ classDiagram
   }
 
   class SearchRequest {
-    +number latitude
-    +number longitude
+    +string location
     +number radiusKm
-    +string fuelType
-    +string sortPreference
+    +FuelType fuelType
   }
 
   class SearchResult {
@@ -328,23 +454,40 @@ classDiagram
   class CheapestRankingStrategy
   class BestValueRankingStrategy
 
+  class ForecastStrategy {
+    <<interface>>
+    +forecast(priceRecords, daysAhead) PriceRecord[]
+  }
+
+  class LinearTrendForecastStrategy
+
   Station "1" --> "*" PriceRecord
   PriceRecord "*" --> "1" FuelType
   SearchRequest --> SearchResult
+  SearchResult --> Station
   RankingStrategy <|.. NearestRankingStrategy
   RankingStrategy <|.. CheapestRankingStrategy
   RankingStrategy <|.. BestValueRankingStrategy
+  ForecastStrategy <|.. LinearTrendForecastStrategy
 ```
 
 ## Development Order
 
+Completed:
 1. Build App and AppLayout.
-2. Build Header, StatusPanel, and Navigation.
+2. Build Header, CredentialsCard, StatusPanel, and Navigation.
 3. Add placeholder pages.
 4. Add mock station data.
-5. Build SearchPage.
-6. Build ResultsPage.
-7. Build StationsPage.
-8. Build MapPage.
-9. Build AnalyticsPage.
-10. Add backend and database later.
+5. Build SearchPage form.
+6. Build ResultsPage comparison.
+7. Build StationsPage table.
+8. Build MapPage preview and selection.
+9. Build AnalyticsPage mock trends.
+10. Add local search filtering by fuel type.
+
+Next:
+1. Responsive layout pass.
+2. Documentation cleanup for coursework report.
+3. Backend API and SQLite database.
+4. Replace mock data with API calls.
+5. Replace map preview with Leaflet/OpenStreetMap.

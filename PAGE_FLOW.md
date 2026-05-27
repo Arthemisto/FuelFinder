@@ -1,82 +1,83 @@
 # FuelFinder Page Flow
 
 ## Purpose
-This document describes how the five main frontend pages should work together.
+This document describes how the five main frontend pages work together.
 
 Current stage:
 - frontend only;
 - mock data only;
 - no backend connection yet;
-- database indicator is a visual placeholder.
+- database indicator is a visual placeholder;
+- GitHub history is used for incremental checkpoints.
 
 Future stage:
 - SearchPage will call backend API;
 - backend will read SQLite data;
-- ResultsPage, MapPage, and StationsPage will use API data.
+- ResultsPage, MapPage, AnalyticsPage, and StationsPage will use API data.
 
 ## Main User Flow
 
 ```text
 SearchPage
-  -> user enters search values
+  -> user enters location, radius, and fuel type
   -> user clicks Find stations
-  -> app stores search request
-  -> app opens ResultsPage
+  -> App stores SearchRequest
+  -> App opens ResultsPage
 
 ResultsPage
-  -> shows cheapest station
-  -> shows nearest station
-  -> shows best-value station
-  -> user can open MapPage
+  -> filters mock stations by selected fuel type
+  -> user chooses comparison mode:
+       Cheapest
+       Nearest
+       Best value
+  -> page shows top 3 matching stations
+  -> Map opens MapPage with selected station highlighted
+  -> Directions opens Google Maps route in a new tab
 
 MapPage
-  -> shows search result stations on a map
-  -> user can inspect station locations
+  -> shows mock map preview
+  -> highlights selected station in red
+  -> Open list view opens StationsPage
 
 StationsPage
-  -> shows all known stations in a table
+  -> shows all mock stations in a table
+  -> Map opens MapPage with selected station highlighted
 
 AnalyticsPage
-  -> shows fuel price history and forecast mock charts
+  -> shows fuel trend preview
+  -> shows forecast preview
+  -> shows fuel update dates from mock station data
 ```
 
-## App State Plan
+## Current App State
 
-At the moment, `App.tsx` only stores:
-
-```text
-activePage
-```
-
-Later, it should also store:
-
-```text
-searchRequest
-searchResult
-selectedStationId
-```
-
-Planned state:
+`App.tsx` currently stores:
 
 ```ts
 activePage: PageName
-searchRequest: SearchRequest | null
-searchResult: SearchResult | null
 selectedStationId: number | null
+searchRequest: SearchRequest | null
 ```
 
-## Frontend First Data Flow
+State responsibilities:
+- `activePage` controls which page is visible;
+- `selectedStationId` controls which map marker is highlighted;
+- `searchRequest` stores the latest search form values.
 
-During the frontend-only phase:
+## Current Frontend Data Flow
 
 ```text
-mock stations
-  -> local search function
-  -> search result object
-  -> ResultsPage / MapPage / StationsPage
+src/data/stations.ts
+  -> SearchPage creates SearchRequest
+  -> App stores SearchRequest
+  -> ResultsPage filters stations by fuelType
+  -> ResultsPage sorts top stations by active comparison mode
+  -> MapPage highlights selected station
+  -> StationsPage displays all stations
+  -> AnalyticsPage derives fuel update summaries
 ```
 
-Later backend phase:
+## Future Backend Data Flow
 
 ```text
 SearchPage form
@@ -85,6 +86,18 @@ SearchPage form
   -> SQLite database
   -> /api/search response
   -> ResultsPage / MapPage
+
+StationsPage
+  -> /api/stations request
+  -> FastAPI backend
+  -> SQLite database
+  -> station table
+
+AnalyticsPage
+  -> /api/analytics request
+  -> FastAPI backend
+  -> price_records table
+  -> trend and forecast response
 ```
 
 ## Page 1: SearchPage
@@ -92,138 +105,166 @@ SearchPage form
 Purpose:
 - collect user search input.
 
-Content:
-- small section label: `FORM WIZARD`;
-- page title: `Build a fast station search`;
-- latitude input;
-- longitude input;
+Current content:
+- page title: `Find nearby fuel stations`;
+- location input;
 - radius select;
 - fuel type select;
-- sort preference select;
 - `Find stations` button;
 - `Use current location` placeholder button.
 
-Initial behavior:
-- fields can be static or locally controlled;
-- `Find stations` will later update app state and open ResultsPage.
+Current behavior:
+- form values are controlled with React state;
+- `Find stations` sends a `SearchRequest` to `App`;
+- `App` stores the request and opens `ResultsPage`;
+- `Use current location` currently shows a placeholder alert.
 
 Future behavior:
 - validate user input;
+- use browser geolocation API;
+- convert current coordinates to a search location;
 - send search request to backend;
 - show errors if backend request fails.
 
 ## Page 2: ResultsPage
 
 Purpose:
-- compare the best station options.
+- compare matching station options.
 
-Content:
-- small section label: `COMPARISON RESULTS`;
-- page title: `Nearest, cheapest, and best-value stations`;
-- 3 result cards:
+Current content:
+- page title: `Compare station results`;
+- search summary chips;
+- comparison mode buttons:
   - Cheapest;
   - Nearest;
   - Best value;
-- search values summary;
-- small chart or chart placeholder.
+- top 3 station cards for the active comparison mode.
 
-Each station card should show:
-- station name;
-- price;
-- distance;
-- `Map` button;
-- `Nav` placeholder button.
+Current behavior:
+- filters mock stations by `searchRequest.fuelType`;
+- sorts filtered stations by active mode;
+- shows empty message if no mock stations match selected fuel type;
+- `Map` button selects station and opens MapPage;
+- `Directions` button opens Google Maps route using station coordinates.
 
-Initial behavior:
-- use mock data;
-- show fixed result cards.
+Current best-value score:
+
+```text
+price + distanceKm * 0.01
+```
 
 Future behavior:
-- calculate results from search request;
-- use backend response;
-- map buttons can select a station and open MapPage.
+- use backend response instead of local mock filtering;
+- tune best-value score for real coursework explanation;
+- include user location distance from backend calculation.
 
 ## Page 3: MapPage
 
 Purpose:
 - show station locations visually.
 
-Content:
-- small section label: `STATION MAP`;
-- page title: `Interactive station map`;
-- station count;
-- map area;
-- link or button to open station list;
+Current content:
+- page title: `Station map`;
+- number of stations shown in preview;
+- mock map surface;
+- mock station markers;
+- `Open list view` button;
 - map/source note.
 
-Initial behavior:
-- use map placeholder or simple CSS mock map.
+Current behavior:
+- markers are positioned visually with CSS, not real coordinates;
+- selected station marker is highlighted in red;
+- if no station is selected, first preview stations are highlighted;
+- `Open list view` opens StationsPage.
 
 Future behavior:
 - use Leaflet with OpenStreetMap tiles;
-- show markers from search results;
-- highlight selected station.
+- show real markers from station coordinates;
+- highlight selected station from ResultsPage or StationsPage;
+- keep OpenStreetMap attribution visible.
 
 ## Page 4: AnalyticsPage
 
 Purpose:
-- show price trends and forecast.
+- show fuel price trends and forecast concept.
 
-Content:
-- small section label: `ANALYTICS WORKSPACE`;
-- page title: `Analytics workspace`;
-- history chart panel;
-- forecast chart panel;
-- legend for fuel types.
+Current content:
+- page title: `Fuel price trends`;
+- History card;
+- Forecast card;
+- mock chart lines;
+- history dates;
+- 3-day forecast dates;
+- fuel type update list for history;
+- forecast disclaimer.
 
-Initial behavior:
-- use static mock charts or simple CSS/SVG charts.
+Current behavior:
+- derives fuel type summaries from mock station data;
+- uses latest `lastUpdate` per fuel type;
+- forecast is visual only and explicitly marked as an estimate.
 
-Future behavior:
-- use price history from backend;
-- show real calculated trend data;
-- show simple forecast based on history.
+Forecast algorithm decision for backend:
+
+```text
+3-day simple linear trend forecast
+```
+
+Planned backend algorithm:
+1. read recent `PriceRecord` rows per fuel type;
+2. sort records by date;
+3. calculate average daily price change;
+4. forecast next 3 days from latest price;
+5. return forecast values to AnalyticsPage.
 
 ## Page 5: StationsPage
 
 Purpose:
 - show all known fuel stations.
 
-Content:
+Current content:
+- page title: `All stations`;
 - station table;
-- station name;
+- station name and brand;
 - address;
 - map action;
 - price;
 - last update.
 
-Initial behavior:
-- show mock station rows.
+Current behavior:
+- shows all mock station rows;
+- `Map` button selects station and opens MapPage.
 
 Future behavior:
 - fetch all stations from backend;
 - add filtering by fuel type or city;
-- map action can open MapPage with selected station.
+- add pagination or internal scroll if dataset grows.
 
-## Shared Types To Add Later
+## Shared Types
 
-Planned type files:
+Implemented type files:
 
 ```text
+src/types/page.ts
 src/types/station.ts
 src/types/search.ts
 ```
 
-Planned data file:
+Implemented data file:
 
 ```text
 src/data/stations.ts
 ```
 
-## Station Type Draft
+## Station Type
 
 ```ts
-export type FuelType = 'diesel' | 'petrol95' | 'petrol98' | 'lpg'
+export type FuelType =
+  | 'diesel'
+  | 'petrol95'
+  | 'petrol98'
+  | 'lpg'
+  | 'diesel plus'
+  | 'electric'
 
 export type Station = {
   id: number
@@ -241,19 +282,15 @@ export type Station = {
 }
 ```
 
-## Search Types Draft
+## Search Types
 
 ```ts
 import type { FuelType, Station } from './station'
 
-export type SortPreference = 'bestValue' | 'cheapest' | 'nearest'
-
 export type SearchRequest = {
-  latitude: number
-  longitude: number
+  location: string
   radiusKm: number
   fuelType: FuelType
-  sortPreference: SortPreference
 }
 
 export type SearchResult = {
@@ -264,29 +301,56 @@ export type SearchResult = {
 }
 ```
 
+## Interaction Diagram
+
+```mermaid
+flowchart TD
+  SearchPage["SearchPage: user form"] -->|onSearch request| App["App state"]
+  App -->|searchRequest| ResultsPage
+  ResultsPage -->|filters by fuelType| MockStations["Mock station data"]
+  ResultsPage -->|Map stationId| App
+  StationsPage -->|Map stationId| App
+  App -->|selectedStationId| MapPage
+  MapPage -->|Open list view| StationsPage
+  StationCard -->|Directions| GoogleMaps["Google Maps directions"]
+  AnalyticsPage -->|derives summaries| MockStations
+```
+
+## Backend Replacement Plan
+
+The current mock data flow should be replaceable without changing the main UI:
+
+```text
+Current:
+stations.ts -> local filtering -> UI
+
+Future:
+FastAPI endpoints -> fetch calls -> UI
+```
+
+Planned endpoints:
+- `GET /health`;
+- `GET /api/stations`;
+- `GET /api/search`;
+- `GET /api/analytics/fuel-trends`;
+- `GET /api/analytics/forecast`.
+
 ## Development Order
 
-1. Finish visual shell.
+Completed:
+1. Build visual shell.
 2. Build SearchPage form.
 3. Add station/search types.
 4. Add mock station data.
-5. Build ResultsPage with mock result cards.
+5. Build ResultsPage with fuel filtering.
 6. Build StationsPage table.
-7. Build MapPage placeholder.
-8. Build AnalyticsPage mock charts.
-9. Add local search logic.
-10. Replace mock logic with backend API later.
+7. Build MapPage placeholder and station highlighting.
+8. Build AnalyticsPage mock history and forecast.
+9. Add map/directions interactions.
 
-## Notes
-
-The small labels above page titles are called `eyebrow` labels in UI terminology.
-They are optional, but they match the provided UI concepts:
-
-```text
-FORM WIZARD
-COMPARISON RESULTS
-STATION MAP
-ANALYTICS WORKSPACE
-```
-
-If they feel too decorative later, they can be renamed or removed.
+Next:
+1. Responsive layout pass.
+2. Coursework report notes.
+3. Backend API scaffold.
+4. SQLite schema and seed data.
+5. Replace mock data with backend API calls.
