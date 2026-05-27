@@ -23,17 +23,19 @@ function getBestValueScore(station: Station) {
 }
 
 function getTopStations(filteredStations: Station[], mode: ResultMode) {
-  const sortedStations = [...filteredStations].sort((firstStation, secondStation) => {
-    if (mode === 'cheapest') {
-      return firstStation.price - secondStation.price
-    }
+  const sortedStations = [...filteredStations].sort(
+    (firstStation, secondStation) => {
+      if (mode === 'cheapest') {
+        return firstStation.price - secondStation.price
+      }
 
-    if (mode === 'nearest') {
-      return firstStation.distanceKm - secondStation.distanceKm
-    }
+      if (mode === 'nearest') {
+        return firstStation.distanceKm - secondStation.distanceKm
+      }
 
-    return getBestValueScore(firstStation) - getBestValueScore(secondStation)
-  })
+      return getBestValueScore(firstStation) - getBestValueScore(secondStation)
+    },
+  )
 
   return sortedStations.slice(0, 3)
 }
@@ -53,10 +55,6 @@ export function ResultsPage({
   return (
     <section className="page-content results-page">
       <h1>Compare station results</h1>
-      <p>
-        Choose how to compare stations and review the top matching options for
-        the current search.
-      </p>
 
       {searchRequest && (
         <div className="search-summary">
