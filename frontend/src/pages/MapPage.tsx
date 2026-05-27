@@ -1,9 +1,8 @@
 export function MapPage() {
   return (
     <section className="page-content">
-      <p className="page-eyebrow">Station map</p>
-      <h1>Interactive station map</h1>
-      <p>Station map will be shown here.</p>
+      <h1>Station map</h1>
+      <p>View available fuel stations by location and inspect station details on the map.</p>
     </section>
   )
 }

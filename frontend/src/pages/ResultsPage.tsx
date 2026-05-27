@@ -1,9 +1,8 @@
 export function ResultsPage() {
   return (
     <section className="page-content">
-      <p className="page-eyebrow">Comparison results</p>
-      <h1>Nearest, cheapest, and best-value stations</h1>
-      <p>Search results will be shown here.</p>
+      <h1>Compare station options</h1>
+      <p>Review the nearest, cheapest, and best-value stations for the current search.</p>
     </section>
   )
 }

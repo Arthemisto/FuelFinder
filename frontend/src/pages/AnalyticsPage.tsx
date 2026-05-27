@@ -1,9 +1,8 @@
 export function AnalyticsPage() {
   return (
     <section className="page-content">
-      <p className="page-eyebrow">Analytics workspace</p>
-      <h1>Analytics workspace</h1>
-      <p>Fuel price trends will be shown here.</p>
+      <h1>Fuel price trends</h1>
+      <p>Track recent price changes and compare fuel types across the station network.</p>
     </section>
   )
 }
