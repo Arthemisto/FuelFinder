@@ -52,6 +52,7 @@ function App() {
       return (
         <MapPage
           selectedStationId={selectedStationId}
+          searchRequest={searchRequest}
           onOpenList={() => setActivePage('stations')}
         />
       )

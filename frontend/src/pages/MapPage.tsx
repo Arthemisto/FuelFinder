@@ -2,18 +2,25 @@ import { divIcon } from 'leaflet'
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
 
 import { stations } from '../data/stations'
+import type { SearchRequest } from '../types/search'
+import type { FuelType } from '../types/station'
 
 type MapPageProps = {
   selectedStationId: number | null
+  searchRequest: SearchRequest | null
   onOpenList: () => void
 }
 
-const visibleStations = stations
-const highlightedStationIds = new Set(
-  visibleStations.slice(0, 3).map((station) => station.id),
-)
-
 const center: [number, number] = [56.9496, 24.1052]
+
+const fuelTypeLabels: Record<FuelType, string> = {
+  diesel: 'Diesel',
+  petrol95: 'Petrol 95',
+  petrol98: 'Petrol 98',
+  lpg: 'LPG',
+  'diesel plus': 'Diesel Plus',
+  electric: 'Electric',
+}
 
 function createStationIcon(isHighlighted: boolean, label: number) {
   return divIcon({
@@ -26,7 +33,31 @@ function createStationIcon(isHighlighted: boolean, label: number) {
   })
 }
 
-export function MapPage({ selectedStationId, onOpenList }: MapPageProps) {
+export function MapPage({
+  selectedStationId,
+  searchRequest,
+  onOpenList,
+}: MapPageProps) {
+  const selectedStation = selectedStationId
+    ? stations.find((station) => station.id === selectedStationId)
+    : null
+
+  const searchStations = searchRequest
+    ? stations.filter((station) => station.fuelType === searchRequest.fuelType)
+    : stations
+
+  const visibleStations =
+    selectedStation &&
+    !searchStations.some((station) => station.id === selectedStation.id)
+      ? [...searchStations, selectedStation]
+      : searchStations
+
+  const topSearchStationIds = new Set(
+    searchRequest
+      ? visibleStations.slice(0, 3).map((station) => station.id)
+      : [],
+  )
+
   return (
     <section className="page-content map-page">
       <div className="map-page-header">
@@ -55,7 +86,7 @@ export function MapPage({ selectedStationId, onOpenList }: MapPageProps) {
           {visibleStations.map((station, index) => {
             const isHighlighted = selectedStationId
               ? selectedStationId === station.id
-              : highlightedStationIds.has(station.id)
+              : topSearchStationIds.has(station.id)
 
             return (
               <Marker
@@ -66,9 +97,21 @@ export function MapPage({ selectedStationId, onOpenList }: MapPageProps) {
                 <Popup>
                   <strong>{station.name}</strong>
                   <br />
-                  {station.price.toFixed(3)} {station.currency}
+                  Fuel: {fuelTypeLabels[station.fuelType]}
                   <br />
+                  {searchRequest && (
+                    <>
+                      Price: {station.price.toFixed(3)} {station.currency}
+                      <br />
+                    </>
+                  )}
                   {station.address}, {station.city}
+                  {searchRequest && (
+                    <>
+                      <br />
+                      Updated: {station.lastUpdate}
+                    </>
+                  )}
                 </Popup>
               </Marker>
             )
