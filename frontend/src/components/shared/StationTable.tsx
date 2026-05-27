@@ -1,3 +1,5 @@
+import { MapPin } from 'lucide-react'
+
 import type { Station } from '../../types/station'
 
 type StationTableProps = {
@@ -34,10 +36,11 @@ export function StationTable({ stations, onShowOnMap }: StationTableProps) {
                 {onShowOnMap && (
                   <button
                     type="button"
-                    className="table-map-button"
+                    className="table-map-button icon-action"
                     onClick={() => onShowOnMap(station.id)}
                   >
-                    Map
+                    <MapPin aria-hidden="true" size={16} strokeWidth={2.5} />
+                    <span>Map</span>
                   </button>
                 )}
               </div>

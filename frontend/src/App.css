@@ -156,6 +156,10 @@
 }
 
 .nav-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
   min-height: 66px;
   padding: 14px 18px;
   border-radius: 16px;
@@ -347,6 +351,16 @@
 
 /* Shared actions */
 
+.icon-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.icon-action span {
+  color: inherit;
+}
 .primary-action,
 .secondary-action {
   min-height: 56px;
@@ -473,6 +487,18 @@
   min-height: 40px;
   padding: 8px 12px;
   border-radius: 14px;
+}
+
+.station-card .primary-action,
+.station-card .primary-action svg,
+.station-card .primary-action span {
+  color: #fff8ee;
+}
+
+.station-card .secondary-action,
+.station-card .secondary-action svg,
+.station-card .secondary-action span {
+  color: var(--text);
 }
 
 /* Map page */

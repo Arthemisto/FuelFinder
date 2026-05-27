@@ -1,3 +1,5 @@
+import { MapPin, Navigation } from 'lucide-react'
+
 import type { Station } from '../../types/station'
 
 type StationCardProps = {
@@ -36,18 +38,20 @@ export function StationCard({
       <div className="station-card-actions">
         <button
           type="button"
-          className="primary-action"
+          className="primary-action icon-action"
           onClick={() => onShowOnMap?.(station.id)}
         >
-          Map
+          <MapPin aria-hidden="true" size={18} strokeWidth={2.5} />
+          <span>Map</span>
         </button>
 
         <button
           type="button"
-          className="secondary-action"
+          className="secondary-action icon-action"
           onClick={handleOpenDirections}
         >
-          Directions
+          <Navigation aria-hidden="true" size={18} strokeWidth={2.5} />
+          <span>Directions</span>
         </button>
       </div>
     </article>

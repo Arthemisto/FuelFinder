@@ -1,3 +1,12 @@
+import {
+  Fuel,
+  List,
+  MapPin,
+  Search,
+  TrendingUp,
+  type LucideIcon,
+} from 'lucide-react'
+
 import type { PageName } from '../../types/page'
 
 type NavigationProps = {
@@ -5,30 +14,29 @@ type NavigationProps = {
   onPageChange: (page: PageName) => void
 }
 
-const navigationItems: { page: PageName; label: string }[] = [
-  { page: 'search', label: 'Search' },
-  { page: 'results', label: 'Results' },
-  { page: 'map', label: 'Map' },
-  { page: 'analytics', label: 'Analytics' },
-  { page: 'stations', label: 'All Stations' },
+const navigationItems: { page: PageName; label: string; Icon: LucideIcon }[] = [
+  { page: 'search', label: 'Search', Icon: Search },
+  { page: 'results', label: 'Results', Icon: List },
+  { page: 'map', label: 'Map', Icon: MapPin },
+  { page: 'analytics', label: 'Analytics', Icon: TrendingUp },
+  { page: 'stations', label: 'All Stations', Icon: Fuel },
 ]
 
 export function Navigation({ activePage, onPageChange }: NavigationProps) {
   return (
     <nav className="navigation">
-      {navigationItems.map((item) => (
+      {navigationItems.map(({ page, label, Icon }) => (
         <button
-          key={item.page}
+          key={page}
           type="button"
           className={
-            activePage === item.page
-              ? 'nav-button nav-button-active'
-              : 'nav-button'
+            activePage === page ? 'nav-button nav-button-active' : 'nav-button'
           }
-          onClick={() => onPageChange(item.page)}
-          aria-pressed={activePage === item.page}
+          onClick={() => onPageChange(page)}
+          aria-pressed={activePage === page}
         >
-          {item.label}
+          <Icon aria-hidden="true" size={24} strokeWidth={2.5} />
+          <span>{label}</span>
         </button>
       ))}
     </nav>
