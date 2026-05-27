@@ -12,9 +12,13 @@ import type { PageName } from './types/page'
 function App() {
   const [activePage, setActivePage] = useState<PageName>('search')
 
+  const handleSearch = () => {
+    setActivePage('results')
+  }
+
   const renderPage = () => {
     if (activePage === 'search') {
-      return <SearchPage />
+      return <SearchPage onSearch={handleSearch} />
     }
 
     if (activePage === 'results') {

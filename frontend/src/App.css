@@ -1,3 +1,5 @@
+/* App shell */
+
 .app-shell {
   width: min(1360px, calc(100% - 48px));
   min-height: calc(100vh - 64px);
@@ -11,6 +13,8 @@
     inset 0 0 0 2px rgba(255, 243, 226, 0.12),
     0 24px 60px rgba(43, 29, 19, 0.24);
 }
+
+/* Header area */
 
 .top-row {
   display: grid;
@@ -53,8 +57,7 @@
   color: #fff8ee;
   font-weight: 700;
   font-size: 32px;
-  background:
-    radial-gradient(circle at 32% 28%, #8a5528, #4b2a12 72%);
+  background: radial-gradient(circle at 32% 28%, #8a5528, #4b2a12 72%);
   border: 2px solid rgba(43, 29, 19, 0.8);
 }
 
@@ -97,6 +100,8 @@
 .credentials-text strong {
   font-size: 20px;
 }
+
+/* Status panel */
 
 .status-panel {
   min-height: 128px;
@@ -141,6 +146,8 @@
   box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.42);
 }
 
+/* Navigation */
+
 .navigation {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -179,6 +186,9 @@
   background: linear-gradient(180deg, #bd6d28 0%, #8a4a16 100%);
   border-color: rgba(43, 29, 19, 0.9);
 }
+
+/* Page container */
+
 .page-container {
   height: calc(100vh - 360px);
   min-height: 420px;
@@ -209,7 +219,7 @@
 .page-content {
   display: grid;
   gap: 14px;
-  max-width: 860px;
+  max-width: 100%;
 }
 
 .page-content h1 {
@@ -225,6 +235,8 @@
   color: var(--muted);
   font-size: 16px;
 }
+
+/* Station table */
 
 .station-table {
   width: 100%;
@@ -268,6 +280,8 @@
   color: var(--muted);
   font-size: 14px;
 }
+
+/* Search page */
 
 .search-form {
   display: grid;
@@ -314,6 +328,8 @@
   margin-top: 10px;
 }
 
+/* Shared actions */
+
 .primary-action,
 .secondary-action {
   min-height: 56px;
@@ -335,22 +351,122 @@
   box-shadow: 0 4px 0 rgba(43, 29, 19, 0.18);
 }
 
+/* Results page */
+
+.result-mode-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.result-mode-button {
+  min-height: 44px;
+  padding: 10px 18px;
+  border: 2px solid rgba(43, 29, 19, 0.72);
+  border-radius: 14px;
+  color: var(--text);
+  font-weight: 700;
+  background: linear-gradient(180deg, #fff3e2 0%, #efd7ba 100%);
+  box-shadow: 0 3px 0 rgba(43, 29, 19, 0.18);
+}
+
+.result-mode-button-active {
+  color: #fff8ee;
+  background: linear-gradient(180deg, #bd6d28 0%, #8a4a16 100%);
+}
+
+.results-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+  margin-top: 22px;
+}
+
+.station-card {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--soft-border);
+  border-radius: 16px;
+  background: rgba(255, 248, 238, 0.78);
+}
+
+.station-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.station-card h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 17px;
+}
+
+.station-card p {
+  color: var(--text);
+  font-size: 15px;
+}
+
+.station-card span {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.station-card .station-rank {
+  display: inline-grid;
+  place-items: center;
+  min-width: 34px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  color: #fff8ee;
+  font-weight: 700;
+  background: var(--accent-dark);
+}
+
+.station-card-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.station-card-actions .primary-action,
+.station-card-actions .secondary-action {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 12px;
+  border-radius: 14px;
+}
+
+/* Responsive */
+
 @media (max-width: 980px) {
-.app-shell {
-  width: min(1280px, calc(100% - 80px));
-  min-height: calc(100vh - 88px);
-  margin: 44px auto;
-  padding: 30px 38px 38px;
-  border: 4px solid var(--border);
-  border-radius: 28px;
-  background:
-    radial-gradient(circle at top, rgba(255, 243, 226, 0.08), transparent 38%),
-    linear-gradient(135deg, #7a471f 0%, var(--shell) 48%, #4f2d17 100%);
-  box-shadow:
-    inset 0 0 0 2px rgba(255, 243, 226, 0.12),
-    0 24px 60px rgba(43, 29, 19, 0.24);
-      .search-form {
+  .app-shell {
+    width: min(100% - 24px, 1280px);
+    min-height: auto;
+    margin: 12px auto;
+    padding: 18px;
+  }
+
+  .top-row,
+  .navigation,
+  .search-form,
+  .results-list {
     grid-template-columns: 1fr;
   }
-}
+
+  .header-card,
+  .credentials-card,
+  .status-panel {
+    min-height: auto;
+  }
+
+  .page-container {
+    min-height: 360px;
+    padding: 28px;
+  }
 }

@@ -1,4 +1,8 @@
-export function SearchPage() {
+type SearchPageProps = {
+  onSearch: () => void
+}
+
+export function SearchPage({ onSearch }: SearchPageProps) {
   const handleUseCurrentLocation = () => {
     // TODO: use browser geolocation API and convert coordinates into search location.
     window.alert('Current location support will be added later.')
@@ -41,17 +45,8 @@ export function SearchPage() {
           </select>
         </label>
 
-        <label className="search-form-wide">
-          Sort preference
-          <select defaultValue="bestValue">
-            <option value="bestValue">Best value</option>
-            <option value="cheapest">Cheapest</option>
-            <option value="nearest">Nearest</option>
-          </select>
-        </label>
-
         <div className="search-actions">
-          <button type="button" className="primary-action">
+          <button type="button" className="primary-action" onClick={onSearch}>
             Find stations
           </button>
 
