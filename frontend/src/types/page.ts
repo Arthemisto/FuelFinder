@@ -1,0 +1,1 @@
+export type PageName = 'search' | 'results' | 'map' | 'analytics' | 'stations'
