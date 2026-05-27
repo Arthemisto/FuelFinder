@@ -9,10 +9,11 @@ export function StatusPanel() {
 
         <div>
           {/* TODO: show green or red indicator based on database connection status */}
-          <dt>db indicator</dt>
+          <dt>DB Connection</dt>
           <dd>
-            light color <span className="status-dot" aria-label="Database is online" />
+            <span className="status-dot" aria-label="Database is online" />
           </dd>
+          
         </div>
 
         <div>

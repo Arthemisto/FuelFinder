@@ -11,6 +11,7 @@
   --border: #2b1d13;
   --soft-border: #c8a884;
   --success: #55c957;
+  --danger: #d94a3a;
 
   --font-body: Arial, Helvetica, sans-serif;
   --font-heading: Georgia, 'Times New Roman', serif;
@@ -38,7 +39,6 @@ body {
   margin: 0;
   background:
     radial-gradient(circle at top left, rgba(189, 109, 40, 0.16), transparent 28%),
-    linear-gradient(180deg, #f8ead8 0%, var(--bg) 48%, #efd8bc 100%);
 }
 
 button,
