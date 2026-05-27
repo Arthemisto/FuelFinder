@@ -1,6 +1,6 @@
 export function StatusPanel() {
   return (
-    <aside>
+    <aside className="status-panel">
       <dl>
         <div>
           <dt>version</dt>
@@ -8,13 +8,15 @@ export function StatusPanel() {
         </div>
 
         <div>
-            {/* to do : green or red indicator showing db connection status */}
+          {/* TODO: show green or red indicator based on database connection status */}
           <dt>db indicator</dt>
-          <dd>light color</dd>
+          <dd>
+            light color <span className="status-dot" aria-label="Database is online" />
+          </dd>
         </div>
 
         <div>
-            {/* to do: connection logic to db and fetch last updates */}
+          {/* TODO: fetch latest database update timestamp from backend */}
           <dt>updated time stamp</dt>
           <dd>May 25, 2025 10:30 AM</dd>
         </div>

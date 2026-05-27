@@ -15,11 +15,16 @@ const navigationItems: { page: PageName; label: string }[] = [
 
 export function Navigation({ activePage, onPageChange }: NavigationProps) {
   return (
-    <nav>
+    <nav className="navigation">
       {navigationItems.map((item) => (
         <button
           key={item.page}
           type="button"
+          className={
+            activePage === item.page
+              ? 'nav-button nav-button-active'
+              : 'nav-button'
+          }
           onClick={() => onPageChange(item.page)}
           aria-pressed={activePage === item.page}
         >

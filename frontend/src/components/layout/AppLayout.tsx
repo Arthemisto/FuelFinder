@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 
 import type { PageName } from '../../types/page'
+import { CredentialsCard } from './CredentialsCard'
 import { Header } from './Header'
 import { Navigation } from './Navigation'
 import { PageContainer } from './PageContainer'
@@ -18,9 +19,10 @@ export function AppLayout({
   children,
 }: AppLayoutProps) {
   return (
-    <div>
-      <div>
+    <div className="app-shell">
+      <div className="top-row">
         <Header />
+        <CredentialsCard />
         <StatusPanel />
       </div>
 
