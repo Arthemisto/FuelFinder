@@ -2,9 +2,10 @@ import type { Station } from '../../types/station'
 
 type StationTableProps = {
   stations: Station[]
+  onShowOnMap?: (stationId: number) => void
 }
 
-export function StationTable({ stations }: StationTableProps) {
+export function StationTable({ stations, onShowOnMap }: StationTableProps) {
   return (
     <table className="station-table">
       <thead>
@@ -23,12 +24,29 @@ export function StationTable({ stations }: StationTableProps) {
               <strong>{station.name}</strong>
               <span>{station.brand}</span>
             </td>
+
             <td>
-              {station.address}, {station.city}
+              <div className="station-address-cell">
+                <span>
+                  {station.address}, {station.city}
+                </span>
+
+                {onShowOnMap && (
+                  <button
+                    type="button"
+                    className="table-map-button"
+                    onClick={() => onShowOnMap(station.id)}
+                  >
+                    Map
+                  </button>
+                )}
+              </div>
             </td>
+
             <td>
               {station.price.toFixed(3)} {station.currency}
             </td>
+
             <td>{station.lastUpdate}</td>
           </tr>
         ))}
