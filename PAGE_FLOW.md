@@ -20,6 +20,7 @@ Future stage:
 ```text
 SearchPage
   -> user enters location, radius, and fuel type
+  -> user can request browser current location
   -> user clicks Find stations
   -> App stores SearchRequest
   -> App opens ResultsPage
@@ -70,6 +71,7 @@ State responsibilities:
 ```text
 src/data/stations.ts
   -> SearchPage creates SearchRequest
+  -> browser geolocation can add optional coordinates
   -> App stores SearchRequest
   -> ResultsPage filters stations by fuelType
   -> ResultsPage sorts top stations by active comparison mode
@@ -112,17 +114,18 @@ Current content:
 - radius select;
 - fuel type select;
 - `Find stations` button;
-- `Use current location` placeholder button.
+- `Use current location` button.
 
 Current behavior:
 - form values are controlled with React state;
 - `Find stations` sends a `SearchRequest` to `App`;
 - `App` stores the request and opens `ResultsPage`;
-- `Use current location` currently shows a placeholder alert.
+- `Use current location` uses browser geolocation;
+- if permission is granted, latitude and longitude are stored in `SearchRequest`;
+- if permission is denied or unavailable, a status message is shown.
 
 Future behavior:
 - validate user input;
-- use browser geolocation API;
 - convert current coordinates to a search location;
 - send search request to backend;
 - show errors if backend request fails.
@@ -298,6 +301,8 @@ export type SearchRequest = {
   location: string
   radiusKm: number
   fuelType: FuelType
+  latitude?: number
+  longitude?: number
 }
 
 export type SearchResult = {
@@ -312,6 +317,7 @@ export type SearchResult = {
 
 ```mermaid
 flowchart TD
+  BrowserGeolocation["Browser geolocation"] -->|optional coordinates| SearchPage
   SearchPage["SearchPage: user form"] -->|onSearch request| App["App state"]
   App -->|searchRequest| ResultsPage
   ResultsPage -->|filters by fuelType| MockStations["Mock station data"]
@@ -356,6 +362,7 @@ Completed:
 8. Build AnalyticsPage mock history and forecast.
 9. Add map/directions interactions.
 10. Add station table filters.
+11. Add browser current-location support.
 
 Next:
 1. Responsive layout pass.

@@ -21,6 +21,7 @@ Implemented:
 - Leaflet/OpenStreetMap map with station selection;
 - Directions buttons that open Google Maps;
 - Lucide icons across header, navigation, and station actions;
+- browser current-location support;
 - analytics history/forecast preview;
 - database status placeholder.
 
@@ -136,10 +137,11 @@ Fields:
 
 Main actions:
 - `Find stations` sends a `SearchRequest` to `App`;
-- `Use current location` is a placeholder for future browser geolocation logic.
+- `Use current location` requests browser geolocation permission.
 
 Current behavior:
 - controlled React state is used for form values;
+- browser geolocation can store latitude and longitude on the search request;
 - submitting the form opens `ResultsPage`.
 
 ### ResultsPage
@@ -332,11 +334,11 @@ Represents user search input.
 Current fields:
 - location;
 - radiusKm;
-- fuelType.
+- fuelType;
+- optional latitude;
+- optional longitude.
 
 Future backend fields may include:
-- latitude;
-- longitude;
 - geocoding source.
 
 ### SearchResult
@@ -398,6 +400,7 @@ flowchart TD
   PageContainer --> StationsPage
 
   SearchPage --> SearchRequest
+  SearchPage --> BrowserGeolocation
   ResultsPage --> StationCard
   ResultsPage --> SearchRequest
   MapPage --> SelectedStationId
@@ -450,6 +453,8 @@ classDiagram
     +string location
     +number radiusKm
     +FuelType fuelType
+    +number? latitude
+    +number? longitude
   }
 
   class SearchResult {
@@ -500,6 +505,7 @@ Completed:
 10. Add local search filtering by fuel type.
 11. Add station table filters by text, fuel type, and brand.
 12. Add Lucide icons.
+13. Add browser current-location support.
 
 Next:
 1. Responsive layout pass.
