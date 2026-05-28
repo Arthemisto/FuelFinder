@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
+from app.routes.health_routes import router as health_router
+from app.routes.status_routes import router as status_router
 
 app = FastAPI(
     title=settings.app_name,
@@ -16,19 +18,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-@app.get("/health")
-def get_health() -> dict[str, str]:
-    return {"status": "ok"}
-
-
-@app.get("/api/status")
-def get_status() -> dict[str, str | None]:
-    return {
-        "backendStatus": "online",
-        "databaseStatus": "not_connected",
-        "version": settings.app_version,
-        "environment": settings.environment,
-        "lastPriceUpdate": None,
-        "lastImportStatus": "not_started",
-    }
+app.include_router(health_router)
+app.include_router(status_router)
