@@ -12,11 +12,13 @@ class StationService:
     def get_active_stations(
         self,
         city: str | None = None,
+        brand: str | None = None,
         fuel_type: str | None = None,
         sort: str | None = None,
     ) -> list[StationResponse]:
         stations = self.repository.get_active_stations(
             city=city,
+            brand=brand,
             fuel_type=fuel_type,
             sort=sort,
         )

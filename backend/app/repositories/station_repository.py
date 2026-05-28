@@ -12,6 +12,7 @@ class StationRepository:
     def get_active_stations(
         self,
         city: str | None = None,
+        brand: str | None = None,
         fuel_type: str | None = None,
         sort: str | None = None,
     ) -> list[Station]:
@@ -25,6 +26,9 @@ class StationRepository:
 
         if city:
             query = query.filter(Station.city.ilike(city))
+
+        if brand:
+            query = query.filter(Station.brand.ilike(brand))
 
         if fuel_type:
             query = (

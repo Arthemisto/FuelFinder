@@ -1,3 +1,5 @@
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
@@ -11,13 +13,15 @@ router = APIRouter(prefix="/api/stations", tags=["stations"])
 @router.get("", response_model=list[StationResponse])
 def get_stations(
     city: str | None = Query(default=None),
+    brand: str | None = Query(default=None),
     fuel_type: str | None = Query(default=None),
-    sort: str | None = Query(default=None),
+    sort: Literal["price_asc", "price_desc"] | None = Query(default=None),
     db: Session = Depends(get_db),
 ) -> list[StationResponse]:
     service = StationService(db)
     return service.get_active_stations(
         city=city,
+        brand=brand,
         fuel_type=fuel_type,
         sort=sort,
     )

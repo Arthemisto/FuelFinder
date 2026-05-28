@@ -145,3 +145,43 @@ def test_stations_endpoint_sorts_by_price_descending() -> None:
     ]
 
     assert diesel_prices == sorted(diesel_prices, reverse=True)
+
+def test_stations_endpoint_rejects_invalid_sort() -> None:
+    response = client.get(
+        "/api/stations",
+        params={
+            "fuel_type": "diesel",
+            "sort": "banana",
+        },
+    )
+
+    assert response.status_code == 422
+
+def test_stations_endpoint_filters_by_brand() -> None:
+    response = client.get("/api/stations", params={"brand": "Circle K"})
+
+    assert response.status_code == 200
+
+    data = response.json()
+    assert len(data) == 2
+    assert all(station["brand"] == "Circle K" for station in data)
+
+
+def test_stations_endpoint_filters_by_city_brand_fuel_type_and_sort() -> None:
+    response = client.get(
+        "/api/stations",
+        params={
+            "city": "Riga",
+            "brand": "Circle K",
+            "fuel_type": "diesel",
+            "sort": "price_asc",
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["brand"] == "Circle K"
+    assert data[0]["city"] == "Riga"
+    assert any(fuel["fuel_type_code"] == "diesel" for fuel in data[0]["fuels"])
