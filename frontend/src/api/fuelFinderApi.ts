@@ -29,6 +29,15 @@ export type StationFiltersResponse = {
   brands: string[]
 }
 
+export type StatusResponse = {
+  backendStatus: string
+  databaseStatus: string
+  version: string
+  environment: string
+  lastPriceUpdate: string | null
+  lastImportStatus: string | null
+}
+
 export type StationSearchParams = {
   city?: string
   brand?: string
@@ -60,6 +69,10 @@ function buildQueryString(params: StationSearchParams): string {
   const queryString = searchParams.toString()
 
   return queryString ? `?${queryString}` : ''
+}
+
+export function getStatus(): Promise<StatusResponse> {
+  return getJson<StatusResponse>('/api/status')
 }
 
 export function getFuelTypes(): Promise<FuelTypeResponse[]> {

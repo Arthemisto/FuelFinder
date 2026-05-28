@@ -1,25 +1,64 @@
+import { useEffect, useState } from 'react'
+
+import { getStatus, type StatusResponse } from '../../api/fuelFinderApi'
+
+function formatStatusTimestamp(timestamp: string | null): string {
+  if (!timestamp) {
+    return 'Not available'
+  }
+
+  return new Intl.DateTimeFormat('en-GB', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(timestamp))
+}
+
 export function StatusPanel() {
+  const [status, setStatus] = useState<StatusResponse | null>(null)
+  const [isOnline, setIsOnline] = useState(false)
+
+  useEffect(() => {
+    const loadStatus = async () => {
+      try {
+        const apiStatus = await getStatus()
+
+        setStatus(apiStatus)
+        setIsOnline(
+          apiStatus.backendStatus === 'online' &&
+            apiStatus.databaseStatus === 'connected',
+        )
+      } catch {
+        setStatus(null)
+        setIsOnline(false)
+      }
+    }
+
+    void loadStatus()
+  }, [])
+
   return (
     <aside className="status-panel">
       <dl>
         <div>
           <dt>version</dt>
-          <dd>1.0.0</dd>
+          <dd>{status?.version ?? 'unknown'}</dd>
         </div>
 
         <div>
-          {/* TODO: show green or red indicator based on database connection status */}
           <dt>DB Connection</dt>
           <dd>
-            <span className="status-dot" aria-label="Database is online" />
+            <span
+              className={
+                isOnline ? 'status-dot status-dot-online' : 'status-dot'
+              }
+              aria-label={isOnline ? 'Database is online' : 'Database is offline'}
+            />
           </dd>
-          
         </div>
 
         <div>
-          {/* TODO: fetch latest database update timestamp from backend */}
           <dt>updated time stamp</dt>
-          <dd>May 25, 2025 10:30 AM</dd>
+          <dd>{formatStatusTimestamp(status?.lastPriceUpdate ?? null)}</dd>
         </div>
       </dl>
     </aside>
