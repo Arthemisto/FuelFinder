@@ -9,8 +9,15 @@ class StationService:
     def __init__(self, db: Session):
         self.repository = StationRepository(db)
 
-    def get_active_stations(self) -> list[StationResponse]:
-        stations = self.repository.get_active_stations()
+    def get_active_stations(
+        self,
+        city: str | None = None,
+        fuel_type: str | None = None,
+    ) -> list[StationResponse]:
+        stations = self.repository.get_active_stations(
+            city=city,
+            fuel_type=fuel_type,
+        )
 
         return [self._build_station_response(station) for station in stations]
 
