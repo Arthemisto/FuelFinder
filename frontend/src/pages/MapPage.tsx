@@ -1,9 +1,10 @@
+import { useEffect, useMemo, useState } from 'react'
 import { divIcon } from 'leaflet'
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
 
-import { stations } from '../data/stations'
+import { getStations, type StationResponse } from '../api/fuelFinderApi'
 import type { SearchRequest } from '../types/search'
-import type { FuelType } from '../types/station'
+import type { FuelType, Station } from '../types/station'
 
 type MapPageProps = {
   selectedStationId: number | null
@@ -18,7 +19,7 @@ const fuelTypeLabels: Record<FuelType, string> = {
   petrol95: 'Petrol 95',
   petrol98: 'Petrol 98',
   lpg: 'LPG',
-  'diesel_plus': 'Diesel Plus',
+  diesel_plus: 'Diesel Plus',
   electric: 'Electric',
 }
 
@@ -33,24 +34,76 @@ function createStationIcon(isHighlighted: boolean, label: number) {
   })
 }
 
+function mapApiStationToStation(
+  station: StationResponse,
+  fuelType: FuelType,
+): Station {
+  const selectedFuel =
+    station.fuels.find((fuel) => fuel.fuel_type_code === fuelType) ??
+    station.fuels[0]
+
+  return {
+    id: station.id,
+    name: station.name,
+    brand: station.brand,
+    address: station.address,
+    city: station.city,
+    latitude: station.latitude,
+    longitude: station.longitude,
+    fuelType,
+    price: selectedFuel?.price ?? 0,
+    currency: 'EUR',
+    distanceKm: 0,
+    lastUpdate: 'Live API data',
+  }
+}
+
 export function MapPage({
   selectedStationId,
   searchRequest,
   onOpenList,
 }: MapPageProps) {
-  const selectedStation = selectedStationId
-    ? stations.find((station) => station.id === selectedStationId)
-    : null
+  const [stations, setStations] = useState<Station[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const searchStations = searchRequest
-    ? stations.filter((station) => station.fuelType === searchRequest.fuelType)
-    : stations
+  const fuelType = searchRequest?.fuelType ?? 'diesel'
+
+  useEffect(() => {
+    const loadStations = async () => {
+      setIsLoading(true)
+      setErrorMessage(null)
+
+      try {
+        const apiStations = await getStations({
+          fuel_type: searchRequest ? fuelType : undefined,
+          sort: searchRequest ? 'price_asc' : undefined,
+        })
+
+        setStations(
+          apiStations.map((station) => mapApiStationToStation(station, fuelType)),
+        )
+      } catch {
+        setErrorMessage('Could not load map stations from the API.')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    void loadStations()
+  }, [fuelType, searchRequest])
+
+  const selectedStation = useMemo(() => {
+    return selectedStationId
+      ? stations.find((station) => station.id === selectedStationId)
+      : null
+  }, [selectedStationId, stations])
 
   const visibleStations =
     selectedStation &&
-    !searchStations.some((station) => station.id === selectedStation.id)
-      ? [...searchStations, selectedStation]
-      : searchStations
+    !stations.some((station) => station.id === selectedStation.id)
+      ? [...stations, selectedStation]
+      : stations
 
   const topSearchStationIds = new Set(
     searchRequest
@@ -70,6 +123,10 @@ export function MapPage({
           Open list view
         </button>
       </div>
+
+      {isLoading && <p>Loading map stations...</p>}
+
+      {errorMessage && <p>{errorMessage}</p>}
 
       <div className="leaflet-map-shell">
         <MapContainer
@@ -99,19 +156,11 @@ export function MapPage({
                   <br />
                   Fuel: {fuelTypeLabels[station.fuelType]}
                   <br />
-                  {searchRequest && (
-                    <>
-                      Price: {station.price.toFixed(3)} {station.currency}
-                      <br />
-                    </>
-                  )}
+                  Price: {station.price.toFixed(3)} {station.currency}
+                  <br />
                   {station.address}, {station.city}
-                  {searchRequest && (
-                    <>
-                      <br />
-                      Updated: {station.lastUpdate}
-                    </>
-                  )}
+                  <br />
+                  Updated: {station.lastUpdate}
                 </Popup>
               </Marker>
             )
@@ -121,7 +170,7 @@ export function MapPage({
 
       <p className="map-note">
         Map tiles are loaded from OpenStreetMap with normal browser caching. The
-        app uses mock station data until backend integration is added.
+        app uses backend station data from the FuelFinder API.
       </p>
     </section>
   )
