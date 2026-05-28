@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 
-import { getStations, type StationResponse } from '../api/fuelFinderApi'
+import {
+  searchStations,
+  type SearchStationResponse,
+} from '../api/fuelFinderApi'
 import { StationCard } from '../components/shared/StationCard'
 import type { SearchRequest } from '../types/search'
 import type { FuelType, Station } from '../types/station'
@@ -18,53 +21,15 @@ const resultModes: { mode: ResultMode; label: string }[] = [
   { mode: 'bestValue', label: 'Best value' },
 ]
 
-function calculateDistanceKm(
-  firstLatitude: number,
-  firstLongitude: number,
-  secondLatitude: number,
-  secondLongitude: number,
-) {
-  const earthRadiusKm = 6371
-  const latitudeDistance = ((secondLatitude - firstLatitude) * Math.PI) / 180
-  const longitudeDistance = ((secondLongitude - firstLongitude) * Math.PI) / 180
-
-  const startLatitude = (firstLatitude * Math.PI) / 180
-  const endLatitude = (secondLatitude * Math.PI) / 180
-
-  const haversine =
-    Math.sin(latitudeDistance / 2) * Math.sin(latitudeDistance / 2) +
-    Math.cos(startLatitude) *
-      Math.cos(endLatitude) *
-      Math.sin(longitudeDistance / 2) *
-      Math.sin(longitudeDistance / 2)
-
-  return Number(
-    (earthRadiusKm * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine))).toFixed(2),
-  )
+const defaultSearchLocation = {
+  latitude: 56.9496,
+  longitude: 24.1052,
 }
 
-function getStationDistance(station: StationResponse, searchRequest: SearchRequest | null) {
-  if (!searchRequest?.latitude || !searchRequest.longitude) {
-    return 0
-  }
-
-  return calculateDistanceKm(
-    searchRequest.latitude,
-    searchRequest.longitude,
-    station.latitude,
-    station.longitude,
-  )
-}
-
-function mapApiStationToStation(
-  station: StationResponse,
+function mapSearchStationToStation(
+  station: SearchStationResponse,
   fuelType: FuelType,
-  searchRequest: SearchRequest | null,
 ): Station {
-  const selectedFuel =
-    station.fuels.find((fuel) => fuel.fuel_type_code === fuelType) ??
-    station.fuels[0]
-
   return {
     id: station.id,
     name: station.name,
@@ -74,9 +39,9 @@ function mapApiStationToStation(
     latitude: station.latitude,
     longitude: station.longitude,
     fuelType,
-    price: selectedFuel?.price ?? 0,
+    price: station.fuel.price,
     currency: 'EUR',
-    distanceKm: getStationDistance(station, searchRequest),
+    distanceKm: station.distance_km,
     lastUpdate: 'Live API data',
   }
 }
@@ -119,14 +84,21 @@ export function ResultsPage({
 
       try {
         const fuelType = searchRequest?.fuelType ?? 'diesel'
-        const apiStations = await getStations({
+        const latitude = searchRequest?.latitude ?? defaultSearchLocation.latitude
+        const longitude =
+          searchRequest?.longitude ?? defaultSearchLocation.longitude
+        const radiusKm = searchRequest?.radiusKm ?? 10
+
+        const searchResponse = await searchStations({
+          latitude,
+          longitude,
+          radius_km: radiusKm,
           fuel_type: fuelType,
-          sort: activeMode === 'cheapest' ? 'price_asc' : undefined,
         })
 
         setStations(
-          apiStations.map((station) =>
-            mapApiStationToStation(station, fuelType, searchRequest),
+          searchResponse.stations.map((station) =>
+            mapSearchStationToStation(station, fuelType),
           ),
         )
       } catch {
@@ -137,7 +109,7 @@ export function ResultsPage({
     }
 
     void loadStations()
-  }, [activeMode, searchRequest])
+  }, [searchRequest])
 
   const activeStations = getTopStations(stations, activeMode)
 
@@ -188,7 +160,7 @@ export function ResultsPage({
       )}
 
       {!isLoading && !errorMessage && activeStations.length === 0 && (
-        <p>No stations found for this fuel type.</p>
+        <p>No stations found for this fuel type in the selected radius.</p>
       )}
     </section>
   )

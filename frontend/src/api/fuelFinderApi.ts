@@ -38,11 +38,46 @@ export type StatusResponse = {
   lastImportStatus: string | null
 }
 
+export type SearchStationFuelResponse = {
+  fuel_type_code: string
+  fuel_type_label: string
+  price: number
+  currency: string
+}
+
+export type SearchStationResponse = {
+  id: number
+  name: string
+  brand: string
+  address: string
+  city: string
+  latitude: number
+  longitude: number
+  distance_km: number
+  best_value_score: number
+  fuel: SearchStationFuelResponse
+}
+
+export type SearchResponse = {
+  latitude: number
+  longitude: number
+  radius_km: number
+  fuel_type: string
+  stations: SearchStationResponse[]
+}
+
 export type StationSearchParams = {
   city?: string
   brand?: string
   fuel_type?: string
   sort?: 'price_asc' | 'price_desc'
+}
+
+export type SearchStationsParams = {
+  latitude: number
+  longitude: number
+  radius_km: number
+  fuel_type: string
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000'
@@ -57,12 +92,14 @@ async function getJson<T>(path: string): Promise<T> {
   return response.json() as Promise<T>
 }
 
-function buildQueryString(params: StationSearchParams): string {
+function buildQueryString(
+  params: Record<string, string | number | undefined>,
+): string {
   const searchParams = new URLSearchParams()
 
   Object.entries(params).forEach(([key, value]) => {
-    if (value) {
-      searchParams.set(key, value)
+    if (value !== undefined && value !== '') {
+      searchParams.set(key, String(value))
     }
   })
 
@@ -83,6 +120,12 @@ export function getStations(
   params: StationSearchParams = {},
 ): Promise<StationResponse[]> {
   return getJson<StationResponse[]>(`/api/stations${buildQueryString(params)}`)
+}
+
+export function searchStations(
+  params: SearchStationsParams,
+): Promise<SearchResponse> {
+  return getJson<SearchResponse>(`/api/search${buildQueryString(params)}`)
 }
 
 export function getStationFilters(): Promise<StationFiltersResponse> {
