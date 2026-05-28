@@ -1,8 +1,12 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
+import {
+  getStationFilters,
+  getStations,
+  type StationResponse,
+} from '../api/fuelFinderApi'
 import { StationTable } from '../components/shared/StationTable'
-import { stations } from '../data/stations'
-import type { FuelType } from '../types/station'
+import type { FuelType, Station } from '../types/station'
 
 type StationsPageProps = {
   onShowOnMap: (stationId: number) => void
@@ -18,32 +22,92 @@ const fuelTypeOptions: { value: FuelType | 'all'; label: string }[] = [
   { value: 'electric', label: 'Electric' },
 ]
 
-const brands = Array.from(new Set(stations.map((station) => station.brand))).sort()
+function mapApiStationToStation(
+  station: StationResponse,
+  fuelType: FuelType | 'all',
+): Station {
+  const selectedFuel =
+    fuelType === 'all'
+      ? station.fuels[0]
+      : station.fuels.find((fuel) => fuel.fuel_type_code === fuelType)
+
+  return {
+    id: station.id,
+    name: station.name,
+    brand: station.brand,
+    address: station.address,
+    city: station.city,
+    latitude: station.latitude,
+    longitude: station.longitude,
+    fuelType: fuelType === 'all' ? 'diesel' : fuelType,
+    price: selectedFuel?.price ?? 0,
+    currency: 'EUR',
+    distanceKm: 0,
+    lastUpdate: 'Live API data',
+  }
+}
 
 export function StationsPage({ onShowOnMap }: StationsPageProps) {
   const [query, setQuery] = useState('')
   const [fuelType, setFuelType] = useState<FuelType | 'all'>('all')
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null)
+  const [stations, setStations] = useState<Station[]>([])
+  const [brands, setBrands] = useState<string[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    const loadFilters = async () => {
+      try {
+        const filters = await getStationFilters()
+        setBrands(filters.brands)
+      } catch {
+        setBrands([])
+      }
+    }
+
+    void loadFilters()
+  }, [])
+
+  useEffect(() => {
+    const loadStations = async () => {
+      setIsLoading(true)
+      setErrorMessage(null)
+
+      try {
+        const apiStations = await getStations({
+          brand: selectedBrand ?? undefined,
+          fuel_type: fuelType === 'all' ? undefined : fuelType,
+          sort: fuelType === 'all' ? undefined : 'price_asc',
+        })
+
+        setStations(
+          apiStations.map((station) =>
+            mapApiStationToStation(station, fuelType),
+          ),
+        )
+      } catch {
+        setErrorMessage('Could not load stations from the API.')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    void loadStations()
+  }, [fuelType, selectedBrand])
 
   const filteredStations = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
 
     return stations.filter((station) => {
-      const matchesQuery =
+      return (
         normalizedQuery.length === 0 ||
         station.name.toLowerCase().includes(normalizedQuery) ||
         station.city.toLowerCase().includes(normalizedQuery) ||
         station.address.toLowerCase().includes(normalizedQuery)
-
-      const matchesFuelType =
-        fuelType === 'all' || station.fuelType === fuelType
-
-      const matchesBrand =
-        selectedBrand === null || station.brand === selectedBrand
-
-      return matchesQuery && matchesFuelType && matchesBrand
+      )
     })
-  }, [fuelType, query, selectedBrand])
+  }, [query, stations])
 
   return (
     <section className="page-content stations-page">
@@ -100,9 +164,15 @@ export function StationsPage({ onShowOnMap }: StationsPageProps) {
         ))}
       </div>
 
-      {filteredStations.length > 0 ? (
+      {isLoading && <p>Loading stations...</p>}
+
+      {errorMessage && <p>{errorMessage}</p>}
+
+      {!isLoading && !errorMessage && filteredStations.length > 0 && (
         <StationTable stations={filteredStations} onShowOnMap={onShowOnMap} />
-      ) : (
+      )}
+
+      {!isLoading && !errorMessage && filteredStations.length === 0 && (
         <p>No stations match the selected filters.</p>
       )}
     </section>
