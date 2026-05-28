@@ -13,6 +13,7 @@ class StationRepository:
         self,
         city: str | None = None,
         fuel_type: str | None = None,
+        sort: str | None = None,
     ) -> list[Station]:
         query = (
             self.db.query(Station)
@@ -34,6 +35,15 @@ class StationRepository:
                     FuelType.code == fuel_type,
                 )
             )
+
+            if sort == "price_asc":
+                query = query.order_by(PriceRecord.price.asc())
+            elif sort == "price_desc":
+                query = query.order_by(PriceRecord.price.desc())
+            else:
+                query = query.order_by(Station.name.asc())
+
+            return query.all()
 
         return query.order_by(Station.name.asc()).all()
 

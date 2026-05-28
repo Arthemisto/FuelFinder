@@ -12,10 +12,15 @@ router = APIRouter(prefix="/api/stations", tags=["stations"])
 def get_stations(
     city: str | None = Query(default=None),
     fuel_type: str | None = Query(default=None),
+    sort: str | None = Query(default=None),
     db: Session = Depends(get_db),
 ) -> list[StationResponse]:
     service = StationService(db)
-    return service.get_active_stations(city=city, fuel_type=fuel_type)
+    return service.get_active_stations(
+        city=city,
+        fuel_type=fuel_type,
+        sort=sort,
+    )
 
 
 @router.get("/{station_id}", response_model=StationResponse)

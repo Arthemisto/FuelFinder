@@ -101,3 +101,47 @@ def test_stations_endpoint_filters_by_city_and_fuel_type() -> None:
         any(fuel["fuel_type_code"] == "diesel" for fuel in station["fuels"])
         for station in data
     )
+
+
+def test_stations_endpoint_sorts_by_price_ascending() -> None:
+    response = client.get(
+        "/api/stations",
+        params={
+            "fuel_type": "diesel",
+            "sort": "price_asc",
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+    diesel_prices = [
+        fuel["price"]
+        for station in data
+        for fuel in station["fuels"]
+        if fuel["fuel_type_code"] == "diesel"
+    ]
+
+    assert diesel_prices == sorted(diesel_prices)
+
+
+def test_stations_endpoint_sorts_by_price_descending() -> None:
+    response = client.get(
+        "/api/stations",
+        params={
+            "fuel_type": "diesel",
+            "sort": "price_desc",
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+    diesel_prices = [
+        fuel["price"]
+        for station in data
+        for fuel in station["fuels"]
+        if fuel["fuel_type_code"] == "diesel"
+    ]
+
+    assert diesel_prices == sorted(diesel_prices, reverse=True)

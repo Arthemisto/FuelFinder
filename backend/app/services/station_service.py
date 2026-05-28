@@ -13,10 +13,12 @@ class StationService:
         self,
         city: str | None = None,
         fuel_type: str | None = None,
+        sort: str | None = None,
     ) -> list[StationResponse]:
         stations = self.repository.get_active_stations(
             city=city,
             fuel_type=fuel_type,
+            sort=sort,
         )
 
         return [self._build_station_response(station) for station in stations]
