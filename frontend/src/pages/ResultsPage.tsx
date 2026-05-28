@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 
 import {
+  getStations,
   searchStations,
   type SearchStationResponse,
+  type StationResponse,
 } from '../api/fuelFinderApi'
 import { StationCard } from '../components/shared/StationCard'
 import type { SearchRequest } from '../types/search'
@@ -21,11 +23,6 @@ const resultModes: { mode: ResultMode; label: string }[] = [
   { mode: 'bestValue', label: 'Best value' },
 ]
 
-const defaultSearchLocation = {
-  latitude: 56.9496,
-  longitude: 24.1052,
-}
-
 function mapSearchStationToStation(
   station: SearchStationResponse,
   fuelType: FuelType,
@@ -42,6 +39,30 @@ function mapSearchStationToStation(
     price: station.fuel.price,
     currency: 'EUR',
     distanceKm: station.distance_km,
+    lastUpdate: 'Live API data',
+  }
+}
+
+function mapApiStationToStation(
+  station: StationResponse,
+  fuelType: FuelType,
+): Station {
+  const selectedFuel =
+    station.fuels.find((fuel) => fuel.fuel_type_code === fuelType) ??
+    station.fuels[0]
+
+  return {
+    id: station.id,
+    name: station.name,
+    brand: station.brand,
+    address: station.address,
+    city: station.city,
+    latitude: station.latitude,
+    longitude: station.longitude,
+    fuelType,
+    price: selectedFuel?.price ?? 0,
+    currency: 'EUR',
+    distanceKm: 0,
     lastUpdate: 'Live API data',
   }
 }
@@ -84,22 +105,34 @@ export function ResultsPage({
 
       try {
         const fuelType = searchRequest?.fuelType ?? 'diesel'
-        const latitude = searchRequest?.latitude ?? defaultSearchLocation.latitude
-        const longitude =
-          searchRequest?.longitude ?? defaultSearchLocation.longitude
-        const radiusKm = searchRequest?.radiusKm ?? 10
+        const hasCoordinates =
+          searchRequest?.latitude !== undefined &&
+          searchRequest.longitude !== undefined
 
-        const searchResponse = await searchStations({
-          latitude,
-          longitude,
-          radius_km: radiusKm,
+        if (searchRequest && hasCoordinates) {
+          const searchResponse = await searchStations({
+            latitude: searchRequest.latitude as number,
+            longitude: searchRequest.longitude as number,
+            radius_km: searchRequest.radiusKm,
+            fuel_type: fuelType,
+          })
+
+          setStations(
+            searchResponse.stations.map((station) =>
+              mapSearchStationToStation(station, fuelType),
+            ),
+          )
+
+          return
+        }
+
+        const apiStations = await getStations({
           fuel_type: fuelType,
+          sort: activeMode === 'cheapest' ? 'price_asc' : undefined,
         })
 
         setStations(
-          searchResponse.stations.map((station) =>
-            mapSearchStationToStation(station, fuelType),
-          ),
+          apiStations.map((station) => mapApiStationToStation(station, fuelType)),
         )
       } catch {
         setErrorMessage('Could not load station results from the API.')
@@ -109,9 +142,11 @@ export function ResultsPage({
     }
 
     void loadStations()
-  }, [searchRequest])
+  }, [activeMode, searchRequest])
 
   const activeStations = getTopStations(stations, activeMode)
+  const isRadiusApplied =
+    searchRequest?.latitude !== undefined && searchRequest.longitude !== undefined
 
   return (
     <section className="page-content results-page">
@@ -120,7 +155,11 @@ export function ResultsPage({
       {searchRequest && (
         <div className="search-summary">
           <span>{searchRequest.location}</span>
-          <span>{searchRequest.radiusKm} km radius</span>
+          <span>
+            {isRadiusApplied
+              ? `${searchRequest.radiusKm} km radius`
+              : 'Fuel type filter'}
+          </span>
           <span>{searchRequest.fuelType}</span>
         </div>
       )}
