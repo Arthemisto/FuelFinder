@@ -64,6 +64,23 @@ class StationRepository:
             .first()
         )
 
+    def get_active_stations_by_fuel_type(self, fuel_type: str) -> list[Station]:
+        return (
+            self.db.query(Station)
+            .options(
+                joinedload(Station.price_records),
+            )
+            .join(PriceRecord)
+            .join(FuelType)
+            .filter(
+                Station.is_active.is_(True),
+                PriceRecord.is_current.is_(True),
+                FuelType.code == fuel_type,
+            )
+            .order_by(Station.name.asc())
+            .all()
+        )
+
     def get_active_cities(self) -> list[str]:
         rows = (
             self.db.query(Station.city)

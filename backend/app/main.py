@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.routes.fuel_type_routes import router as fuel_type_router
 from app.routes.health_routes import router as health_router
+from app.routes.search_routes import router as search_router
 from app.routes.station_routes import router as station_router
 from app.routes.status_routes import router as status_router
 
@@ -24,3 +25,4 @@ app.include_router(health_router)
 app.include_router(status_router)
 app.include_router(fuel_type_router)
 app.include_router(station_router)
+app.include_router(search_router)

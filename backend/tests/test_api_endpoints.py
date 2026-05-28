@@ -194,3 +194,56 @@ def test_station_filters_endpoint_returns_cities_and_brands() -> None:
     data = response.json()
     assert data["cities"] == ["Jelgava", "Riga"]
     assert data["brands"] == ["Circle K", "Neste", "Viada", "Virsi"]
+
+def test_search_endpoint_returns_stations_inside_radius() -> None:
+    response = client.get(
+        "/api/search",
+        params={
+            "latitude": 56.9496,
+            "longitude": 24.1052,
+            "radius_km": 10,
+            "fuel_type": "diesel",
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["fuel_type"] == "diesel"
+    assert len(data["stations"]) == 3
+    assert all(station["distance_km"] <= 10 for station in data["stations"])
+    assert all(
+        station["fuel"]["fuel_type_code"] == "diesel"
+        for station in data["stations"]
+    )
+
+
+def test_search_endpoint_returns_empty_list_when_radius_is_too_small() -> None:
+    response = client.get(
+        "/api/search",
+        params={
+            "latitude": 56.9496,
+            "longitude": 24.1052,
+            "radius_km": 1,
+            "fuel_type": "diesel",
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["stations"] == []
+
+
+def test_search_endpoint_rejects_invalid_coordinates() -> None:
+    response = client.get(
+        "/api/search",
+        params={
+            "latitude": 120,
+            "longitude": 24.1052,
+            "radius_km": 10,
+            "fuel_type": "diesel",
+        },
+    )
+
+    assert response.status_code == 422
