@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 
 from app.database import SessionLocal, create_database_tables
 from app.models.fuel_type_model import FuelType
+from app.models.price_record_model import PriceRecord
 from app.models.station_fuel_type_model import StationFuelType
 from app.models.station_model import Station
 
@@ -71,6 +72,87 @@ STATION_FUEL_TYPES = [
     {"station_name": "Circle K Purvciems", "fuel_type_code": "petrol98"},
 ]
 
+PRICE_RECORDS = [
+    {
+        "station_name": "Neste Skanste",
+        "fuel_type_code": "diesel",
+        "price": 1.564,
+        "currency": "EUR",
+        "source": "seed",
+    },
+    {
+        "station_name": "Neste Skanste",
+        "fuel_type_code": "petrol95",
+        "price": 1.629,
+        "currency": "EUR",
+        "source": "seed",
+    },
+    {
+        "station_name": "Circle K Brivibas",
+        "fuel_type_code": "diesel",
+        "price": 1.589,
+        "currency": "EUR",
+        "source": "seed",
+    },
+    {
+        "station_name": "Circle K Brivibas",
+        "fuel_type_code": "petrol95",
+        "price": 1.638,
+        "currency": "EUR",
+        "source": "seed",
+    },
+    {
+        "station_name": "Circle K Brivibas",
+        "fuel_type_code": "petrol98",
+        "price": 1.724,
+        "currency": "EUR",
+        "source": "seed",
+    },
+    {
+        "station_name": "Virsi Imanta",
+        "fuel_type_code": "diesel",
+        "price": 1.571,
+        "currency": "EUR",
+        "source": "seed",
+    },
+    {
+        "station_name": "Virsi Imanta",
+        "fuel_type_code": "petrol95",
+        "price": 1.619,
+        "currency": "EUR",
+        "source": "seed",
+    },
+    {
+        "station_name": "Viada Jelgava",
+        "fuel_type_code": "diesel",
+        "price": 1.552,
+        "currency": "EUR",
+        "source": "seed",
+    },
+    {
+        "station_name": "Viada Jelgava",
+        "fuel_type_code": "lpg",
+        "price": 0.765,
+        "currency": "EUR",
+        "source": "seed",
+    },
+    {
+        "station_name": "Circle K Purvciems",
+        "fuel_type_code": "petrol95",
+        "price": 1.638,
+        "currency": "EUR",
+        "source": "seed",
+    },
+    {
+        "station_name": "Circle K Purvciems",
+        "fuel_type_code": "petrol98",
+        "price": 1.724,
+        "currency": "EUR",
+        "source": "seed",
+    },
+]
+
+
 def seed_fuel_types(db: Session) -> None:
     for fuel_type_data in FUEL_TYPES:
         existing_fuel_type = (
@@ -85,6 +167,7 @@ def seed_fuel_types(db: Session) -> None:
         db.add(FuelType(**fuel_type_data))
 
     db.commit()
+
 
 def seed_stations(db: Session) -> None:
     for station_data in STATIONS:
@@ -103,6 +186,7 @@ def seed_stations(db: Session) -> None:
         db.add(Station(**station_data))
 
     db.commit()
+
 
 def seed_station_fuel_types(db: Session) -> None:
     for station_fuel_type_data in STATION_FUEL_TYPES:
@@ -141,6 +225,51 @@ def seed_station_fuel_types(db: Session) -> None:
 
     db.commit()
 
+
+def seed_price_records(db: Session) -> None:
+    for price_record_data in PRICE_RECORDS:
+        station = (
+            db.query(Station)
+            .filter(Station.name == price_record_data["station_name"])
+            .first()
+        )
+        fuel_type = (
+            db.query(FuelType)
+            .filter(FuelType.code == price_record_data["fuel_type_code"])
+            .first()
+        )
+
+        if not station or not fuel_type:
+            continue
+
+        existing_price_record = (
+            db.query(PriceRecord)
+            .filter(
+                PriceRecord.station_id == station.id,
+                PriceRecord.fuel_type_id == fuel_type.id,
+                PriceRecord.source == price_record_data["source"],
+                PriceRecord.is_current.is_(True),
+            )
+            .first()
+        )
+
+        if existing_price_record:
+            continue
+
+        db.add(
+            PriceRecord(
+                station_id=station.id,
+                fuel_type_id=fuel_type.id,
+                price=price_record_data["price"],
+                currency=price_record_data["currency"],
+                source=price_record_data["source"],
+                is_current=True,
+            )
+        )
+
+    db.commit()
+
+
 def seed_database() -> None:
     create_database_tables()
 
@@ -152,7 +281,10 @@ def seed_database() -> None:
         print("Stations seeded.")
         seed_station_fuel_types(db)
         print("Station fuel types seeded.")
+        seed_price_records(db)
+        print("Price records seeded.")
         print("Database seed finished.")
-        
+
+
 if __name__ == "__main__":
     seed_database()
