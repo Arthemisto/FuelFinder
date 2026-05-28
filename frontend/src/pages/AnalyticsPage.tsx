@@ -14,7 +14,7 @@ const fuelTypeLabels: Record<FuelType, string> = {
   petrol95: 'Petrol 95',
   petrol98: 'Petrol 98',
   lpg: 'LPG',
-  'diesel plus': 'Diesel Plus',
+  'diesel_plus': 'Diesel Plus',
   electric: 'Electric',
 }
 
@@ -38,7 +38,7 @@ const fuelTypeClasses: Record<
     lineClassName: 'chart-line-orange',
     swatchClassName: 'fuel-swatch-orange',
   },
-  'diesel plus': {
+  'diesel_plus': {
     lineClassName: 'chart-line-brown',
     swatchClassName: 'fuel-swatch-brown',
   },

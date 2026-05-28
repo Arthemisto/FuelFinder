@@ -1,4 +1,10 @@
-export type FuelType = 'diesel' | 'petrol95' | 'petrol98' | 'lpg' | 'diesel plus' | 'electric' 
+export type FuelType =
+  | 'diesel'
+  | 'petrol95'
+  | 'petrol98'
+  | 'lpg'
+  | 'diesel_plus'
+  | 'electric'
 
 export type Station = {
   id: number

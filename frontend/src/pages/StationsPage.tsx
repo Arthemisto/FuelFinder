@@ -14,7 +14,7 @@ const fuelTypeOptions: { value: FuelType | 'all'; label: string }[] = [
   { value: 'petrol95', label: 'Petrol 95' },
   { value: 'petrol98', label: 'Petrol 98' },
   { value: 'lpg', label: 'LPG' },
-  { value: 'diesel plus', label: 'Diesel Plus' },
+  { value: 'diesel_plus', label: 'Diesel Plus' },
   { value: 'electric', label: 'Electric' },
 ]
 

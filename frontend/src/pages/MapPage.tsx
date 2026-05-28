@@ -18,7 +18,7 @@ const fuelTypeLabels: Record<FuelType, string> = {
   petrol95: 'Petrol 95',
   petrol98: 'Petrol 98',
   lpg: 'LPG',
-  'diesel plus': 'Diesel Plus',
+  'diesel_plus': 'Diesel Plus',
   electric: 'Electric',
 }
 
