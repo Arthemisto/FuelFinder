@@ -19,3 +19,11 @@ desktop.ini
 
 # Temporary project notes
 BACKEND_TODAY_PLAN.md
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local backend database
+backend/data/*.db
+backend/data/*.db-*
