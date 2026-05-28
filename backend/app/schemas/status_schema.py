@@ -7,4 +7,4 @@ class StatusResponse(BaseModel):
     version: str
     environment: str
     lastPriceUpdate: str | None
-    lastImportStatus: str
+    lastImportStatus: str | None
