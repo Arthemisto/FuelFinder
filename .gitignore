@@ -16,3 +16,6 @@ desktop.ini
 # env files
 .env
 .env.local
+
+# Temporary project notes
+BACKEND_TODAY_PLAN.md
