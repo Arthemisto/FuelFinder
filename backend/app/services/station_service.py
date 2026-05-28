@@ -2,7 +2,11 @@ from sqlalchemy.orm import Session
 
 from app.models.station_model import Station
 from app.repositories.station_repository import StationRepository
-from app.schemas.station_schema import StationFuelPriceResponse, StationResponse
+from app.schemas.station_schema import (
+    StationFiltersResponse,
+    StationFuelPriceResponse,
+    StationResponse,
+)
 
 
 class StationService:
@@ -32,6 +36,12 @@ class StationService:
             return None
 
         return self._build_station_response(station)
+
+    def get_station_filters(self) -> StationFiltersResponse:
+        return StationFiltersResponse(
+            cities=self.repository.get_active_cities(),
+            brands=self.repository.get_active_brands(),
+        )
 
     def _build_station_response(self, station: Station) -> StationResponse:
         fuels = [

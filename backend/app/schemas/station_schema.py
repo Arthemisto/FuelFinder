@@ -18,3 +18,8 @@ class StationResponse(BaseModel):
     longitude: float
     is_active: bool
     fuels: list[StationFuelPriceResponse]
+
+
+class StationFiltersResponse(BaseModel):
+    cities: list[str]
+    brands: list[str]

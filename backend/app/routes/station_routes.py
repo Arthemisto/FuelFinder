@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.schemas.station_schema import StationResponse
+from app.schemas.station_schema import StationFiltersResponse, StationResponse
 from app.services.station_service import StationService
 
 router = APIRouter(prefix="/api/stations", tags=["stations"])
@@ -25,6 +25,12 @@ def get_stations(
         fuel_type=fuel_type,
         sort=sort,
     )
+
+
+@router.get("/filters", response_model=StationFiltersResponse)
+def get_station_filters(db: Session = Depends(get_db)) -> StationFiltersResponse:
+    service = StationService(db)
+    return service.get_station_filters()
 
 
 @router.get("/{station_id}", response_model=StationResponse)

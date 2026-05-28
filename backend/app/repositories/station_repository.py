@@ -63,3 +63,25 @@ class StationRepository:
             )
             .first()
         )
+
+    def get_active_cities(self) -> list[str]:
+        rows = (
+            self.db.query(Station.city)
+            .filter(Station.is_active.is_(True))
+            .distinct()
+            .order_by(Station.city.asc())
+            .all()
+        )
+
+        return [row[0] for row in rows]
+
+    def get_active_brands(self) -> list[str]:
+        rows = (
+            self.db.query(Station.brand)
+            .filter(Station.is_active.is_(True))
+            .distinct()
+            .order_by(Station.brand.asc())
+            .all()
+        )
+
+        return [row[0] for row in rows]

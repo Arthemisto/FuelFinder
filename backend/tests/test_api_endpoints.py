@@ -185,3 +185,12 @@ def test_stations_endpoint_filters_by_city_brand_fuel_type_and_sort() -> None:
     assert data[0]["brand"] == "Circle K"
     assert data[0]["city"] == "Riga"
     assert any(fuel["fuel_type_code"] == "diesel" for fuel in data[0]["fuels"])
+
+def test_station_filters_endpoint_returns_cities_and_brands() -> None:
+    response = client.get("/api/stations/filters")
+
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["cities"] == ["Jelgava", "Riga"]
+    assert data["brands"] == ["Circle K", "Neste", "Viada", "Virsi"]
