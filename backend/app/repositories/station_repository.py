@@ -17,3 +17,16 @@ class StationRepository:
             .order_by(Station.name.asc())
             .all()
         )
+
+    def get_active_station_by_id(self, station_id: int) -> Station | None:
+        return (
+            self.db.query(Station)
+            .options(
+                joinedload(Station.price_records),
+            )
+            .filter(
+                Station.id == station_id,
+                Station.is_active.is_(True),
+            )
+            .first()
+        )

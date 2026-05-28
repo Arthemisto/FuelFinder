@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -12,3 +12,17 @@ router = APIRouter(prefix="/api/stations", tags=["stations"])
 def get_stations(db: Session = Depends(get_db)) -> list[StationResponse]:
     service = StationService(db)
     return service.get_active_stations()
+
+
+@router.get("/{station_id}", response_model=StationResponse)
+def get_station_by_id(
+    station_id: int,
+    db: Session = Depends(get_db),
+) -> StationResponse:
+    service = StationService(db)
+    station = service.get_active_station_by_id(station_id)
+
+    if not station:
+        raise HTTPException(status_code=404, detail="Station not found")
+
+    return station

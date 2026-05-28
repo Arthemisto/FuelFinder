@@ -14,6 +14,14 @@ class StationService:
 
         return [self._build_station_response(station) for station in stations]
 
+    def get_active_station_by_id(self, station_id: int) -> StationResponse | None:
+        station = self.repository.get_active_station_by_id(station_id)
+
+        if not station:
+            return None
+
+        return self._build_station_response(station)
+
     def _build_station_response(self, station: Station) -> StationResponse:
         fuels = [
             StationFuelPriceResponse(
