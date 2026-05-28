@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 
 from app.database import SessionLocal, create_database_tables
 from app.models.fuel_type_model import FuelType
+from app.models.station_fuel_type_model import StationFuelType
 from app.models.station_model import Station
 
 FUEL_TYPES = [
@@ -56,6 +57,20 @@ STATIONS = [
     },
 ]
 
+STATION_FUEL_TYPES = [
+    {"station_name": "Neste Skanste", "fuel_type_code": "diesel"},
+    {"station_name": "Neste Skanste", "fuel_type_code": "petrol95"},
+    {"station_name": "Circle K Brivibas", "fuel_type_code": "diesel"},
+    {"station_name": "Circle K Brivibas", "fuel_type_code": "petrol95"},
+    {"station_name": "Circle K Brivibas", "fuel_type_code": "petrol98"},
+    {"station_name": "Virsi Imanta", "fuel_type_code": "diesel"},
+    {"station_name": "Virsi Imanta", "fuel_type_code": "petrol95"},
+    {"station_name": "Viada Jelgava", "fuel_type_code": "diesel"},
+    {"station_name": "Viada Jelgava", "fuel_type_code": "lpg"},
+    {"station_name": "Circle K Purvciems", "fuel_type_code": "petrol95"},
+    {"station_name": "Circle K Purvciems", "fuel_type_code": "petrol98"},
+]
+
 def seed_fuel_types(db: Session) -> None:
     for fuel_type_data in FUEL_TYPES:
         existing_fuel_type = (
@@ -89,6 +104,43 @@ def seed_stations(db: Session) -> None:
 
     db.commit()
 
+def seed_station_fuel_types(db: Session) -> None:
+    for station_fuel_type_data in STATION_FUEL_TYPES:
+        station = (
+            db.query(Station)
+            .filter(Station.name == station_fuel_type_data["station_name"])
+            .first()
+        )
+        fuel_type = (
+            db.query(FuelType)
+            .filter(FuelType.code == station_fuel_type_data["fuel_type_code"])
+            .first()
+        )
+
+        if not station or not fuel_type:
+            continue
+
+        existing_station_fuel_type = (
+            db.query(StationFuelType)
+            .filter(
+                StationFuelType.station_id == station.id,
+                StationFuelType.fuel_type_id == fuel_type.id,
+            )
+            .first()
+        )
+
+        if existing_station_fuel_type:
+            continue
+
+        db.add(
+            StationFuelType(
+                station_id=station.id,
+                fuel_type_id=fuel_type.id,
+            )
+        )
+
+    db.commit()
+
 def seed_database() -> None:
     create_database_tables()
 
@@ -98,7 +150,9 @@ def seed_database() -> None:
         print("Fuel types seeded.")
         seed_stations(db)
         print("Stations seeded.")
+        seed_station_fuel_types(db)
+        print("Station fuel types seeded.")
         print("Database seed finished.")
-
+        
 if __name__ == "__main__":
     seed_database()
