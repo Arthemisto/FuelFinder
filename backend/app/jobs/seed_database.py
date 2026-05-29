@@ -226,6 +226,30 @@ HISTORICAL_PRICE_RECORDS = [
         "currency": "EUR",
         "source": "seed_history",
     },
+        {
+        "days_ago": 3,
+        "station_name": "Circle K Brivibas",
+        "fuel_type_code": "petrol98",
+        "price": 1.708,
+        "currency": "EUR",
+        "source": "seed_history",
+    },
+    {
+        "days_ago": 2,
+        "station_name": "Circle K Brivibas",
+        "fuel_type_code": "petrol98",
+        "price": 1.716,
+        "currency": "EUR",
+        "source": "seed_history",
+    },
+    {
+        "days_ago": 1,
+        "station_name": "Circle K Brivibas",
+        "fuel_type_code": "petrol98",
+        "price": 1.721,
+        "currency": "EUR",
+        "source": "seed_history",
+    },
 ]
 
 def seed_fuel_types(db: Session) -> None:
