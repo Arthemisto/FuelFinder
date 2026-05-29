@@ -2,7 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { divIcon } from 'leaflet'
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
 
-import { getStations, type StationResponse } from '../api/fuelFinderApi'
+import {
+  getStations,
+  searchStations,
+  type SearchStationResponse,
+  type StationResponse,
+} from '../api/fuelFinderApi'
 import type { SearchRequest } from '../types/search'
 import type { FuelType, Station } from '../types/station'
 
@@ -34,6 +39,13 @@ function createStationIcon(isHighlighted: boolean, label: number) {
   })
 }
 
+function hasSearchCoordinates(searchRequest: SearchRequest | null) {
+  return (
+    searchRequest?.latitude !== undefined &&
+    searchRequest.longitude !== undefined
+  )
+}
+
 function mapApiStationToStation(
   station: StationResponse,
   fuelType: FuelType,
@@ -58,6 +70,26 @@ function mapApiStationToStation(
   }
 }
 
+function mapSearchStationToStation(
+  station: SearchStationResponse,
+  fuelType: FuelType,
+): Station {
+  return {
+    id: station.id,
+    name: station.name,
+    brand: station.brand,
+    address: station.address,
+    city: station.city,
+    latitude: station.latitude,
+    longitude: station.longitude,
+    fuelType,
+    price: station.fuel.price,
+    currency: 'EUR',
+    distanceKm: station.distance_km,
+    lastUpdate: 'Live API data',
+  }
+}
+
 export function MapPage({
   selectedStationId,
   searchRequest,
@@ -68,6 +100,7 @@ export function MapPage({
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const fuelType = searchRequest?.fuelType ?? 'diesel'
+  const isRadiusApplied = hasSearchCoordinates(searchRequest)
 
   useEffect(() => {
     const loadStations = async () => {
@@ -75,6 +108,23 @@ export function MapPage({
       setErrorMessage(null)
 
       try {
+        if (searchRequest && isRadiusApplied) {
+          const searchResponse = await searchStations({
+            latitude: searchRequest.latitude as number,
+            longitude: searchRequest.longitude as number,
+            radius_km: searchRequest.radiusKm,
+            fuel_type: fuelType,
+          })
+
+          setStations(
+            searchResponse.stations.map((station) =>
+              mapSearchStationToStation(station, fuelType),
+            ),
+          )
+
+          return
+        }
+
         const apiStations = await getStations({
           fuel_type: searchRequest ? fuelType : undefined,
           sort: searchRequest ? 'price_asc' : undefined,
@@ -91,7 +141,7 @@ export function MapPage({
     }
 
     void loadStations()
-  }, [fuelType, searchRequest])
+  }, [fuelType, isRadiusApplied, searchRequest])
 
   const selectedStation = useMemo(() => {
     return selectedStationId
@@ -116,7 +166,12 @@ export function MapPage({
       <div className="map-page-header">
         <div>
           <h1>Station map</h1>
-          <p>{visibleStations.length} stations shown on map.</p>
+          <p>
+            {visibleStations.length} stations shown on map
+            {searchRequest && isRadiusApplied
+              ? ` within ${searchRequest.radiusKm} km.`
+              : '.'}
+          </p>
         </div>
 
         <button type="button" className="secondary-action" onClick={onOpenList}>
@@ -158,6 +213,12 @@ export function MapPage({
                   <br />
                   Price: {station.price.toFixed(3)} {station.currency}
                   <br />
+                  {isRadiusApplied && (
+                    <>
+                      Distance: {station.distanceKm} km
+                      <br />
+                    </>
+                  )}
                   {station.address}, {station.city}
                   <br />
                   Updated: {station.lastUpdate}
