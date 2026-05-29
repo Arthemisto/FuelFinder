@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 
+from datetime import datetime, timedelta
 from app.database import SessionLocal, create_database_tables
 from app.models.fuel_type_model import FuelType
 from app.models.price_record_model import PriceRecord
@@ -152,6 +153,80 @@ PRICE_RECORDS = [
     },
 ]
 
+HISTORICAL_PRICE_RECORDS = [
+    {
+        "days_ago": 3,
+        "station_name": "Neste Skanste",
+        "fuel_type_code": "diesel",
+        "price": 1.552,
+        "currency": "EUR",
+        "source": "seed_history",
+    },
+    {
+        "days_ago": 2,
+        "station_name": "Neste Skanste",
+        "fuel_type_code": "diesel",
+        "price": 1.558,
+        "currency": "EUR",
+        "source": "seed_history",
+    },
+    {
+        "days_ago": 1,
+        "station_name": "Neste Skanste",
+        "fuel_type_code": "diesel",
+        "price": 1.561,
+        "currency": "EUR",
+        "source": "seed_history",
+    },
+    {
+        "days_ago": 3,
+        "station_name": "Circle K Brivibas",
+        "fuel_type_code": "petrol95",
+        "price": 1.622,
+        "currency": "EUR",
+        "source": "seed_history",
+    },
+    {
+        "days_ago": 2,
+        "station_name": "Circle K Brivibas",
+        "fuel_type_code": "petrol95",
+        "price": 1.629,
+        "currency": "EUR",
+        "source": "seed_history",
+    },
+    {
+        "days_ago": 1,
+        "station_name": "Circle K Brivibas",
+        "fuel_type_code": "petrol95",
+        "price": 1.635,
+        "currency": "EUR",
+        "source": "seed_history",
+    },
+    {
+        "days_ago": 3,
+        "station_name": "Viada Jelgava",
+        "fuel_type_code": "lpg",
+        "price": 0.755,
+        "currency": "EUR",
+        "source": "seed_history",
+    },
+    {
+        "days_ago": 2,
+        "station_name": "Viada Jelgava",
+        "fuel_type_code": "lpg",
+        "price": 0.759,
+        "currency": "EUR",
+        "source": "seed_history",
+    },
+    {
+        "days_ago": 1,
+        "station_name": "Viada Jelgava",
+        "fuel_type_code": "lpg",
+        "price": 0.762,
+        "currency": "EUR",
+        "source": "seed_history",
+    },
+]
 
 def seed_fuel_types(db: Session) -> None:
     for fuel_type_data in FUEL_TYPES:
@@ -269,6 +344,64 @@ def seed_price_records(db: Session) -> None:
 
     db.commit()
 
+def seed_historical_price_records(db: Session) -> None:
+    for price_record_data in HISTORICAL_PRICE_RECORDS:
+        station = (
+            db.query(Station)
+            .filter(Station.name == price_record_data["station_name"])
+            .first()
+        )
+        fuel_type = (
+            db.query(FuelType)
+            .filter(FuelType.code == price_record_data["fuel_type_code"])
+            .first()
+        )
+
+        if not station or not fuel_type:
+            continue
+
+        recorded_at = datetime.utcnow() - timedelta(
+            days=price_record_data["days_ago"],
+        )
+
+        existing_price_record = (
+            db.query(PriceRecord)
+            .filter(
+                PriceRecord.station_id == station.id,
+                PriceRecord.fuel_type_id == fuel_type.id,
+                PriceRecord.source == price_record_data["source"],
+                PriceRecord.recorded_at >= recorded_at.replace(
+                    hour=0,
+                    minute=0,
+                    second=0,
+                    microsecond=0,
+                ),
+                PriceRecord.recorded_at < recorded_at.replace(
+                    hour=23,
+                    minute=59,
+                    second=59,
+                    microsecond=999999,
+                ),
+            )
+            .first()
+        )
+
+        if existing_price_record:
+            continue
+
+        db.add(
+            PriceRecord(
+                station_id=station.id,
+                fuel_type_id=fuel_type.id,
+                price=price_record_data["price"],
+                currency=price_record_data["currency"],
+                source=price_record_data["source"],
+                recorded_at=recorded_at,
+                is_current=False,
+            )
+        )
+
+    db.commit()
 
 def seed_database() -> None:
     create_database_tables()
@@ -283,8 +416,9 @@ def seed_database() -> None:
         print("Station fuel types seeded.")
         seed_price_records(db)
         print("Price records seeded.")
+        seed_historical_price_records(db)
+        print("Historical price records seeded.")
         print("Database seed finished.")
-
 
 if __name__ == "__main__":
     seed_database()
