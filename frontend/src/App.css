@@ -1,8 +1,10 @@
 /* App shell */
 
 .app-shell {
+  display: flex;
+  flex-direction: column;
   width: min(1360px, calc(100% - 48px));
-  min-height: calc(100vh - 64px);
+  height: calc(100dvh - 64px);
   margin: 32px auto;
   padding: 38px 46px 46px;
   border-radius: 28px;
@@ -196,8 +198,8 @@
 /* Page container */
 
 .page-container {
-  height: calc(100vh - 360px);
-  min-height: 420px;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   scrollbar-gutter: stable;
   padding: 44px 44px 44px 54px;
@@ -578,7 +580,7 @@
 
 .leaflet-map-shell {
   min-height: 360px;
-  margin-top: 18px;
+  margin-top: 0px;
   overflow: hidden;
   border: 1px solid var(--soft-border);
   border-radius: 18px;
@@ -635,6 +637,7 @@
 
 .analytics-card {
   display: grid;
+  grid-template-rows: auto auto auto minmax(74px, auto);
   gap: 10px;
   padding: 18px;
   border: 1px solid var(--soft-border);
@@ -775,6 +778,7 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
+  min-height: 74px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -832,8 +836,12 @@
 }
 
 .forecast-note {
-  align-self: start;
-  max-width: 520px;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  max-width: none;
+  min-height: 74px;
+  margin: 0;
   padding: 12px 14px;
   border: 3px solid rgb(221, 14, 7);
   border-radius: 12px;

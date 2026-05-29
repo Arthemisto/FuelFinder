@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 
-import { getStations, type StationResponse } from '../api/fuelFinderApi'
+import {
+  getFuelTrends,
+  type FuelTrendResponse,
+} from '../api/fuelFinderApi'
 import type { FuelType } from '../types/station'
 
 type FuelSummary = {
@@ -8,19 +11,9 @@ type FuelSummary = {
   label: string
   averagePrice: number
   cheapestPrice: number
-  stationCount: number
-  lastUpdate: string
+  pointCount: number
   lineClassName: string
   swatchClassName: string
-}
-
-const fuelTypeLabels: Record<FuelType, string> = {
-  diesel: 'Diesel',
-  petrol95: 'Petrol 95',
-  petrol98: 'Petrol 98',
-  lpg: 'LPG',
-  diesel_plus: 'Diesel Plus',
-  electric: 'Electric',
 }
 
 const fuelTypeClasses: Record<
@@ -53,34 +46,80 @@ const fuelTypeClasses: Record<
   },
 }
 
-const historyChartDates = ['May 25', 'May 26', 'May 27', 'May 28']
-const forecastChartDates = ['May 29', 'May 30', 'May 31']
-const chartMonthLabel = 'Live API data'
+function parseTrendDate(date: string): Date {
+  return new Date(`${date}T00:00:00`)
+}
 
-function buildFuelSummaries(stations: StationResponse[]): FuelSummary[] {
-  const priceMap = new Map<FuelType, number[]>()
+function formatShortDate(date: Date): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    month: 'short',
+    day: 'numeric',
+  }).format(date)
+}
 
-  stations.forEach((station) => {
-    station.fuels.forEach((fuel) => {
-      const fuelType = fuel.fuel_type_code as FuelType
-      const prices = priceMap.get(fuelType) ?? []
+function formatMonthYear(date: Date | null): string {
+  if (!date) {
+    return 'No price history'
+  }
 
-      priceMap.set(fuelType, [...prices, fuel.price])
-    })
+  return new Intl.DateTimeFormat('en-GB', {
+    month: 'long',
+    year: 'numeric',
+  }).format(date)
+}
+
+function getSortedHistoryDates(trends: FuelTrendResponse[]): string[] {
+  return Array.from(
+    new Set(
+      trends.flatMap((trend) => trend.points.map((point) => point.date)),
+    ),
+  ).sort()
+}
+
+function getLatestTrendDate(trends: FuelTrendResponse[]): Date | null {
+  const dates = getSortedHistoryDates(trends)
+
+  if (dates.length === 0) {
+    return null
+  }
+
+  return parseTrendDate(dates[dates.length - 1])
+}
+
+function getHistoryChartDates(trends: FuelTrendResponse[]): string[] {
+  return getSortedHistoryDates(trends).slice(-4).map((date) =>
+    formatShortDate(parseTrendDate(date)),
+  )
+}
+
+function getForecastChartDates(latestDate: Date | null): string[] {
+  if (!latestDate) {
+    return []
+  }
+
+  return [1, 2, 3].map((daysAhead) => {
+    const forecastDate = new Date(latestDate)
+    forecastDate.setDate(forecastDate.getDate() + daysAhead)
+
+    return formatShortDate(forecastDate)
   })
+}
 
-  return Array.from(priceMap.entries())
-    .map(([fuelType, prices]) => {
+function buildFuelSummaries(trends: FuelTrendResponse[]): FuelSummary[] {
+  return trends
+    .filter((trend) => trend.points.length > 0)
+    .map((trend) => {
+      const prices = trend.points.map((point) => point.average_price)
       const totalPrice = prices.reduce((sum, price) => sum + price, 0)
       const averagePrice = totalPrice / prices.length
+      const fuelType = trend.fuel_type as FuelType
 
       return {
         fuelType,
-        label: fuelTypeLabels[fuelType],
+        label: trend.label,
         averagePrice,
         cheapestPrice: Math.min(...prices),
-        stationCount: prices.length,
-        lastUpdate: 'Not available',
+        pointCount: trend.points.length,
         lineClassName: fuelTypeClasses[fuelType].lineClassName,
         swatchClassName: fuelTypeClasses[fuelType].swatchClassName,
       }
@@ -102,8 +141,8 @@ function FuelLegend({ items }: FuelLegendProps) {
           <span className={`fuel-swatch ${fuel.swatchClassName}`} />
           <strong>{fuel.label}</strong>
           <span>
-            avg {fuel.averagePrice.toFixed(3)} EUR · min{' '}
-            {fuel.cheapestPrice.toFixed(3)} EUR · {fuel.stationCount} stations
+            avg {fuel.averagePrice.toFixed(3)} EUR - min{' '}
+            {fuel.cheapestPrice.toFixed(3)} EUR - {fuel.pointCount} points
           </span>
         </li>
       ))}
@@ -112,13 +151,16 @@ function FuelLegend({ items }: FuelLegendProps) {
 }
 
 type ChartSurfaceProps = {
+  dates: string[]
   items: FuelSummary[]
   variant?: 'history' | 'forecast'
 }
 
-function ChartSurface({ items, variant = 'history' }: ChartSurfaceProps) {
-  const dates = variant === 'forecast' ? forecastChartDates : historyChartDates
-
+function ChartSurface({
+  dates,
+  items,
+  variant = 'history',
+}: ChartSurfaceProps) {
   return (
     <div
       className={
@@ -148,18 +190,18 @@ function ChartSurface({ items, variant = 'history' }: ChartSurfaceProps) {
 }
 
 export function AnalyticsPage() {
-  const [stations, setStations] = useState<StationResponse[]>([])
+  const [trends, setTrends] = useState<FuelTrendResponse[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {
-    const loadStations = async () => {
+    const loadFuelTrends = async () => {
       setIsLoading(true)
       setErrorMessage(null)
 
       try {
-        const apiStations = await getStations()
-        setStations(apiStations)
+        const apiTrends = await getFuelTrends()
+        setTrends(apiTrends.trends)
       } catch {
         setErrorMessage('Could not load analytics data from the API.')
       } finally {
@@ -167,19 +209,25 @@ export function AnalyticsPage() {
       }
     }
 
-    void loadStations()
+    void loadFuelTrends()
   }, [])
 
-  const fuelSummaries = useMemo(() => buildFuelSummaries(stations), [stations])
+  const latestTrendDate = useMemo(() => getLatestTrendDate(trends), [trends])
+  const chartPeriodLabel = useMemo(
+    () => formatMonthYear(latestTrendDate),
+    [latestTrendDate],
+  )
+  const fuelSummaries = useMemo(() => buildFuelSummaries(trends), [trends])
   const visibleFuelSummaries = fuelSummaries.slice(0, 4)
+  const historyChartDates = useMemo(() => getHistoryChartDates(trends), [trends])
+  const forecastChartDates = useMemo(
+    () => getForecastChartDates(latestTrendDate),
+    [latestTrendDate],
+  )
 
   return (
     <section className="page-content analytics-page">
       <h1>Fuel price trends</h1>
-      <p>
-        Track recent price changes and compare fuel types across the station
-        network.
-      </p>
 
       {isLoading && <p>Loading analytics data...</p>}
 
@@ -192,10 +240,13 @@ export function AnalyticsPage() {
 
             <div className="analytics-meta-row">
               <p>Latest fuel updates from:</p>
-              <strong>{chartMonthLabel}</strong>
+              <strong>{chartPeriodLabel}</strong>
             </div>
 
-            <ChartSurface items={visibleFuelSummaries} />
+            <ChartSurface
+              dates={historyChartDates}
+              items={visibleFuelSummaries}
+            />
 
             <FuelLegend items={visibleFuelSummaries} />
           </article>
@@ -204,14 +255,18 @@ export function AnalyticsPage() {
             <h2>Forecast</h2>
 
             <div className="analytics-meta-row">
-              <p>Forecast based on current backend station prices.</p>
-              <strong>{chartMonthLabel}</strong>
+              <p>Forecast based on current backend price history.</p>
+              <strong>{chartPeriodLabel}</strong>
             </div>
 
-            <ChartSurface items={visibleFuelSummaries} variant="forecast" />
+            <ChartSurface
+              dates={forecastChartDates}
+              items={visibleFuelSummaries}
+              variant="forecast"
+            />
 
             <p className="forecast-note">
-              This forecast is a placeholder until historical import data is
+              This forecast is a placeholder until forecast strategy logic is
               available.
             </p>
           </article>

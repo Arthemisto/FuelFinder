@@ -66,6 +66,21 @@ export type SearchResponse = {
   stations: SearchStationResponse[]
 }
 
+export type FuelTrendPointResponse = {
+  date: string
+  average_price: number
+}
+
+export type FuelTrendResponse = {
+  fuel_type: string
+  label: string
+  points: FuelTrendPointResponse[]
+}
+
+export type FuelTrendsResponse = {
+  trends: FuelTrendResponse[]
+}
+
 export type StationSearchParams = {
   city?: string
   brand?: string
@@ -126,6 +141,10 @@ export function searchStations(
   params: SearchStationsParams,
 ): Promise<SearchResponse> {
   return getJson<SearchResponse>(`/api/search${buildQueryString(params)}`)
+}
+
+export function getFuelTrends(): Promise<FuelTrendsResponse> {
+  return getJson<FuelTrendsResponse>('/api/analytics/fuel-trends')
 }
 
 export function getStationFilters(): Promise<StationFiltersResponse> {
