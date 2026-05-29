@@ -247,3 +247,16 @@ def test_search_endpoint_rejects_invalid_coordinates() -> None:
     )
 
     assert response.status_code == 422
+
+def test_analytics_fuel_trends_endpoint_returns_trends() -> None:
+    response = client.get("/api/analytics/fuel-trends")
+
+    assert response.status_code == 200
+
+    data = response.json()
+    assert "trends" in data
+    assert isinstance(data["trends"], list)
+    assert len(data["trends"]) > 0
+    assert "fuel_type" in data["trends"][0]
+    assert "label" in data["trends"][0]
+    assert "points" in data["trends"][0]
