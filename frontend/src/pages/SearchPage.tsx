@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
+import { getFuelTypes } from '../api/fuelFinderApi'
 import type { SearchRequest } from '../types/search'
 import type { FuelType } from '../types/station'
 
@@ -7,7 +8,7 @@ type SearchPageProps = {
   onSearch: (request: SearchRequest) => void
 }
 
-const fuelTypeOptions: { value: FuelType; label: string }[] = [
+const fallbackFuelTypeOptions: { value: FuelType; label: string }[] = [
   { value: 'diesel', label: 'Diesel' },
   { value: 'petrol95', label: 'Petrol 95' },
   { value: 'petrol98', label: 'Petrol 98' },
@@ -20,11 +21,33 @@ export function SearchPage({ onSearch }: SearchPageProps) {
   const [location, setLocation] = useState('Riga, Latvia')
   const [radiusKm, setRadiusKm] = useState(5)
   const [fuelType, setFuelType] = useState<FuelType>('diesel')
+  const [fuelTypeOptions, setFuelTypeOptions] = useState(
+    fallbackFuelTypeOptions,
+  )
   const [coordinates, setCoordinates] = useState<{
     latitude: number
     longitude: number
   } | null>(null)
   const [locationStatus, setLocationStatus] = useState<string | null>(null)
+
+  useEffect(() => {
+    const loadFuelTypes = async () => {
+      try {
+        const apiFuelTypes = await getFuelTypes()
+
+        setFuelTypeOptions(
+          apiFuelTypes.map((apiFuelType) => ({
+            value: apiFuelType.code as FuelType,
+            label: apiFuelType.label,
+          })),
+        )
+      } catch {
+        setFuelTypeOptions(fallbackFuelTypeOptions)
+      }
+    }
+
+    void loadFuelTypes()
+  }, [])
 
   const handleSearch = () => {
     onSearch({
