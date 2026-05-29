@@ -50,8 +50,8 @@ export function SearchPage({ onSearch }: SearchPageProps) {
         const longitude = Number(position.coords.longitude.toFixed(5))
 
         setCoordinates({ latitude, longitude })
-        setLocation('Current location')
-        setLocationStatus(`Location detected: ${latitude}, ${longitude}`)
+        setLocation(`Current location: ${latitude}, ${longitude}`)
+        setLocationStatus('Radius filtering is active.')
       },
       () => {
         setLocationStatus('Location permission was denied or unavailable.')
@@ -76,7 +76,7 @@ export function SearchPage({ onSearch }: SearchPageProps) {
             onChange={(event) => {
               setLocation(event.target.value)
               setCoordinates(null)
-              setLocationStatus(null)
+              setLocationStatus('Use current location to apply radius filtering.')
             }}
           />
         </label>

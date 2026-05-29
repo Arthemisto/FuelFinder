@@ -164,6 +164,12 @@ export function ResultsPage({
         </div>
       )}
 
+      {searchRequest && !isRadiusApplied && (
+  <p className="location-status">
+    Use current location to apply radius filtering.
+  </p>
+)}
+
       <div className="result-mode-buttons">
         {resultModes.map((item) => (
           <button
