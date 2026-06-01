@@ -1,9 +1,80 @@
 from fastapi.testclient import TestClient
 
+from app.algorithms.distance import calculate_distance_km
+from app.jobs.seed_database import STATIONS
 from app.main import app
 
 
 client = TestClient(app)
+
+
+def expected_stations_by_city(city: str) -> list[dict]:
+    return [
+        station
+        for station in STATIONS
+        if station["city"] == city
+    ]
+
+
+def expected_stations_by_fuel_type(fuel_type: str) -> list[dict]:
+    return [
+        station
+        for station in STATIONS
+        if fuel_type in station["fuels"]
+    ]
+
+
+def expected_stations_by_city_and_fuel_type(
+    city: str,
+    fuel_type: str,
+) -> list[dict]:
+    return [
+        station
+        for station in STATIONS
+        if station["city"] == city
+        and fuel_type in station["fuels"]
+    ]
+
+
+def expected_stations_by_brand(brand: str) -> list[dict]:
+    return [
+        station
+        for station in STATIONS
+        if station["brand"] == brand
+    ]
+
+
+def expected_stations_by_city_brand_fuel_type(
+    city: str,
+    brand: str,
+    fuel_type: str,
+) -> list[dict]:
+    return [
+        station
+        for station in STATIONS
+        if station["city"] == city
+        and station["brand"] == brand
+        and fuel_type in station["fuels"]
+    ]
+
+
+def expected_stations_inside_radius(
+    latitude: float,
+    longitude: float,
+    radius_km: float,
+    fuel_type: str,
+) -> list[dict]:
+    return [
+        station
+        for station in STATIONS
+        if fuel_type in station["fuels"]
+        and calculate_distance_km(
+            latitude,
+            longitude,
+            station["latitude"],
+            station["longitude"],
+        ) <= radius_km
+    ]
 
 
 def test_health_endpoint_returns_ok() -> None:
@@ -66,7 +137,7 @@ def test_stations_endpoint_filters_by_city() -> None:
     assert response.status_code == 200
 
     data = response.json()
-    assert len(data) == 4
+    assert len(data) == len(expected_stations_by_city("Riga"))
     assert all(station["city"] == "Riga" for station in data)
 
 
@@ -76,11 +147,18 @@ def test_stations_endpoint_filters_by_fuel_type() -> None:
     assert response.status_code == 200
 
     data = response.json()
-    assert len(data) == 4
+    assert len(data) == len(expected_stations_by_fuel_type("diesel"))
     assert all(
         any(fuel["fuel_type_code"] == "diesel" for fuel in station["fuels"])
         for station in data
     )
+
+
+def test_stations_endpoint_returns_empty_list_for_electric() -> None:
+    response = client.get("/api/stations", params={"fuel_type": "electric"})
+
+    assert response.status_code == 200
+    assert response.json() == []
 
 
 def test_stations_endpoint_filters_by_city_and_fuel_type() -> None:
@@ -95,7 +173,9 @@ def test_stations_endpoint_filters_by_city_and_fuel_type() -> None:
     assert response.status_code == 200
 
     data = response.json()
-    assert len(data) == 3
+    assert len(data) == len(
+        expected_stations_by_city_and_fuel_type("Riga", "diesel")
+    )
     assert all(station["city"] == "Riga" for station in data)
     assert all(
         any(fuel["fuel_type_code"] == "diesel" for fuel in station["fuels"])
@@ -146,6 +226,7 @@ def test_stations_endpoint_sorts_by_price_descending() -> None:
 
     assert diesel_prices == sorted(diesel_prices, reverse=True)
 
+
 def test_stations_endpoint_rejects_invalid_sort() -> None:
     response = client.get(
         "/api/stations",
@@ -157,13 +238,14 @@ def test_stations_endpoint_rejects_invalid_sort() -> None:
 
     assert response.status_code == 422
 
+
 def test_stations_endpoint_filters_by_brand() -> None:
     response = client.get("/api/stations", params={"brand": "Circle K"})
 
     assert response.status_code == 200
 
     data = response.json()
-    assert len(data) == 2
+    assert len(data) == len(expected_stations_by_brand("Circle K"))
     assert all(station["brand"] == "Circle K" for station in data)
 
 
@@ -181,10 +263,16 @@ def test_stations_endpoint_filters_by_city_brand_fuel_type_and_sort() -> None:
     assert response.status_code == 200
 
     data = response.json()
-    assert len(data) == 1
-    assert data[0]["brand"] == "Circle K"
-    assert data[0]["city"] == "Riga"
-    assert any(fuel["fuel_type_code"] == "diesel" for fuel in data[0]["fuels"])
+    assert len(data) == len(
+        expected_stations_by_city_brand_fuel_type("Riga", "Circle K", "diesel")
+    )
+    assert all(station["brand"] == "Circle K" for station in data)
+    assert all(station["city"] == "Riga" for station in data)
+    assert all(
+        any(fuel["fuel_type_code"] == "diesel" for fuel in station["fuels"])
+        for station in data
+    )
+
 
 def test_station_filters_endpoint_returns_cities_and_brands() -> None:
     response = client.get("/api/stations/filters")
@@ -192,8 +280,9 @@ def test_station_filters_endpoint_returns_cities_and_brands() -> None:
     assert response.status_code == 200
 
     data = response.json()
-    assert data["cities"] == ["Jelgava", "Riga"]
-    assert data["brands"] == ["Circle K", "Neste", "Viada", "Virsi"]
+    assert data["cities"] == sorted({station["city"] for station in STATIONS})
+    assert data["brands"] == sorted({station["brand"] for station in STATIONS})
+
 
 def test_search_endpoint_returns_stations_inside_radius() -> None:
     response = client.get(
@@ -210,7 +299,14 @@ def test_search_endpoint_returns_stations_inside_radius() -> None:
 
     data = response.json()
     assert data["fuel_type"] == "diesel"
-    assert len(data["stations"]) == 3
+    assert len(data["stations"]) == len(
+        expected_stations_inside_radius(
+            latitude=56.9496,
+            longitude=24.1052,
+            radius_km=10,
+            fuel_type="diesel",
+        )
+    )
     assert all(station["distance_km"] <= 10 for station in data["stations"])
     assert all(
         station["fuel"]["fuel_type_code"] == "diesel"
@@ -247,6 +343,7 @@ def test_search_endpoint_rejects_invalid_coordinates() -> None:
     )
 
     assert response.status_code == 422
+
 
 def test_analytics_fuel_trends_endpoint_returns_trends() -> None:
     response = client.get("/api/analytics/fuel-trends")
