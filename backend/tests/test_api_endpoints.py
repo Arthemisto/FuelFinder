@@ -260,3 +260,18 @@ def test_analytics_fuel_trends_endpoint_returns_trends() -> None:
     assert "fuel_type" in data["trends"][0]
     assert "label" in data["trends"][0]
     assert "points" in data["trends"][0]
+
+
+def test_analytics_forecast_endpoint_returns_forecasts() -> None:
+    response = client.get("/api/analytics/forecast")
+
+    assert response.status_code == 200
+
+    data = response.json()
+    assert "forecasts" in data
+    assert isinstance(data["forecasts"], list)
+    assert len(data["forecasts"]) > 0
+    assert "fuel_type" in data["forecasts"][0]
+    assert "label" in data["forecasts"][0]
+    assert "points" in data["forecasts"][0]
+    assert "predicted_price" in data["forecasts"][0]["points"][0]
