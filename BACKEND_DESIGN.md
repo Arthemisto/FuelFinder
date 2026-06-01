@@ -13,6 +13,7 @@ The backend will be built with:
 - SQLAlchemy;
 - Alembic later for migrations;
 - SQLite for local/demo mode;
+- Oracle Database in Docker for local Oracle verification;
 - Oracle Autonomous Database later for cloud production mode;
 - object-oriented service, repository, algorithm, provider, and job layers.
 
@@ -56,10 +57,9 @@ later migrate to Oracle Autonomous Database or PostgreSQL without changing
 service and algorithm logic.
 
 ### Oracle Docker Direction
-Before moving to Oracle Autonomous Database, the next verification step is to
-run the current schema and seed flow against Oracle Database in Docker.
+Oracle Database in Docker is now a verified local database target.
 
-The expected local verification flow is:
+The verified local flow is:
 
 ```text
 FastAPI backend
@@ -69,8 +69,18 @@ FastAPI backend
   -> React frontend
 ```
 
-This step should prove that the current repository/service/database separation
-works beyond SQLite.
+This proves that the current repository/service/database separation works beyond
+SQLite.
+
+Implementation notes:
+- Oracle access uses SQLAlchemy with the `oracledb` driver.
+- Database selection is controlled through `DATABASE_URL`.
+- Oracle health checks use `SELECT 1 FROM DUAL`.
+- primary key columns use SQLAlchemy `Identity()` for Oracle inserts.
+- repository boolean filters use SQLAlchemy equality expressions instead of
+  `.is_(True)` so Oracle does not receive `IS 1`.
+- analytics date grouping uses an Oracle-compatible SQLAlchemy expression rather
+  than SQLite-style `date(...)`.
 
 ### Oracle Cloud Direction
 Target cloud architecture:
@@ -374,7 +384,7 @@ Local/demo mode:
 SQLite
 ```
 
-Local Oracle verification mode:
+Verified local Oracle mode:
 
 ```text
 Oracle Database in Docker
@@ -1231,12 +1241,10 @@ Original planned backend implementation order:
 
 Current next implementation target:
 1. Keep SQLite local/demo mode working.
-2. Add Oracle driver dependency and environment examples.
-3. Configure `DATABASE_URL` for Oracle Database in Docker.
-4. Run the existing seed job against Oracle.
-5. Verify the existing API endpoints against Oracle data.
-6. Verify the React frontend against the backend connected to Oracle.
-7. Add Dockerfiles/app deployment pieces after Oracle connectivity is stable.
+2. Keep Oracle Docker mode working through `DATABASE_URL`.
+3. Add Dockerfiles/app deployment pieces for backend and frontend.
+4. Decide whether local deployment uses SQLite volume mode or external Oracle.
+5. Prepare Oracle Autonomous Database configuration after local app deployment is stable.
 
 ## Testing Plan
 
@@ -1273,10 +1281,11 @@ Initial Docker goal:
 - store SQLite database in a mounted `data/` folder for local/demo mode;
 - keep configuration in environment variables.
 
-Current Docker/Oracle goal:
-- first use the existing Oracle Docker database as an external database target;
-- keep frontend and backend runnable from local development commands;
-- only containerize frontend/backend after database connectivity is verified.
+Current Docker/Oracle status:
+- Oracle Docker is verified as an external database target;
+- frontend and backend are runnable from local development commands;
+- the next Docker work is containerizing backend/frontend around the verified
+  database configuration.
 
 This keeps the project deployable to:
 - local development machine;

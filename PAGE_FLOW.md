@@ -8,6 +8,10 @@ the FastAPI backend, and the database.
 The application no longer uses frontend mock station data as the runtime source
 of truth. Pages load data through `frontend/src/api/fuelFinderApi.ts`.
 
+The same page flow has been verified with both the SQLite local/demo database
+and Oracle Database running in Docker. The frontend/backend API contracts did
+not need to change for the Oracle-backed run.
+
 ## Main User Flow
 
 ```text
@@ -78,13 +82,13 @@ React page
   -> response rendered by React page
 ```
 
-Local/demo database:
+Supported local/demo database:
 
 ```text
 SQLite
 ```
 
-Next database target:
+Verified local Oracle database:
 
 ```text
 Oracle Database in Docker
@@ -211,7 +215,7 @@ flowchart TD
   AnalyticsPage -->|API trends/forecast| Backend
   StatusPanel -->|API status| Backend
   MapPage -->|API stations/search| Backend
-  Backend --> Database["SQLite local / Oracle Docker target"]
+  Backend --> Database["SQLite local / Oracle Docker verified"]
   ResultsPage -->|Map stationId| App
   StationsPage -->|Map stationId| App
   App -->|selectedStationId| MapPage
@@ -219,12 +223,9 @@ flowchart TD
   StationCard -->|Directions| GoogleMaps["Google Maps directions"]
 ```
 
-## Next Flow Target
+## Verified Flow
 
-The next flow target is not another frontend mock replacement. That is already
-done.
-
-Next target:
+The current flow has been smoke-tested as:
 
 ```text
 React frontend
@@ -234,3 +235,6 @@ React frontend
 
 The same frontend/backend API contracts should work with either SQLite or Oracle
 as long as `DATABASE_URL` points to the desired database.
+
+Next flow work is packaging/deployment oriented: containerize backend/frontend
+or prepare the same API flow for Oracle Autonomous Database.

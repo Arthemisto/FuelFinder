@@ -9,7 +9,7 @@ The project is built around:
 - FastAPI backend;
 - SQLAlchemy models and repositories;
 - SQLite local/demo database;
-- Oracle Database as the next local Docker target.
+- verified Oracle Database in Docker support.
 
 The backend is the runtime source of truth for:
 - fuel types;
@@ -33,16 +33,19 @@ Implemented:
 - browser current-location support for radius search;
 - FastAPI backend with layered route/service/repository structure;
 - SQLite database setup;
+- Oracle Database in Docker setup verified locally;
+- `oracledb` driver support;
 - seed job for pseudo/demo data;
-- SQLAlchemy models for stations, fuel types, station fuel availability, and price records;
-- backend tests for API endpoints, distance calculation, and forecast calculation.
+- Oracle-compatible SQLAlchemy models for stations, fuel types, station fuel availability, and price records;
+- backend tests for API endpoints, distance calculation, and forecast calculation;
+- latest verified backend test run: `25 passed`;
+- frontend build and development server verified against the Oracle-backed API.
 
 Current limitations:
 - manual location text is not geocoded;
 - radius filtering is only applied when browser coordinates are available;
 - demo data is still seeded from local pseudo-data;
 - `lastImportStatus` exists in the API schema but is not used in the public UI;
-- Oracle Docker database has not been verified yet;
 - Alembic migrations are not configured yet.
 
 ## Runtime Data Flow
@@ -62,7 +65,7 @@ Local/demo mode:
 SQLite database at backend/data/fuelfinder.db
 ```
 
-Next target:
+Verified local Oracle mode:
 
 ```text
 Oracle Database in Docker
@@ -204,12 +207,15 @@ cd backend
 python -m pytest
 ```
 
-Seed local/demo database:
+Seed the configured database:
 
 ```powershell
 cd backend
 python -m app.jobs.seed_database
 ```
+
+The seed job uses `DATABASE_URL`, so it can target SQLite or Oracle Docker
+depending on the active `.env` file.
 
 Run backend:
 
@@ -239,17 +245,27 @@ npm.cmd run dev
 npm.cmd run build
 ```
 
+## Oracle Docker Verification
+
+The existing database-backed application has been verified against Oracle
+Database running in Docker.
+
+Verified:
+- backend connects through `DATABASE_URL`;
+- `seed_database` creates and populates Oracle tables;
+- API endpoints read Oracle data;
+- `/api/status` reports `databaseStatus=connected` and `environment=oracle-local`;
+- backend tests pass with `25 passed`;
+- frontend build/dev flow works against the Oracle-backed API.
+
 ## Next Project Target
 
-The next major checkpoint is to verify the existing database-backed application
-against Oracle Database running in Docker.
+The next major checkpoint is to package or deploy the already verified app
+stack.
 
 Planned next steps:
-1. Add Oracle driver dependency and environment example.
-2. Keep SQLite as the default local/demo mode.
-3. Configure `DATABASE_URL` for Oracle Docker.
-4. Run backend database connection check against Oracle.
-5. Run `seed_database` against Oracle.
-6. Verify API endpoints read Oracle data.
-7. Verify frontend works through the same backend API.
-8. Update deployment notes after the Oracle Docker test is stable.
+1. Add Dockerfile for the FastAPI backend.
+2. Add frontend production build serving, likely through Nginx.
+3. Add docker-compose or deployment notes for backend/frontend using an external Oracle database.
+4. Keep SQLite as the lightweight local/demo fallback.
+5. Prepare Oracle Autonomous Database configuration after the local app deployment flow is stable.
