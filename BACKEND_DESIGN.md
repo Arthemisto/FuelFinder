@@ -18,15 +18,16 @@ The backend will be built with:
 
 ## Core Direction
 
-The current frontend already has the main user interface:
+The current frontend has the main user interface:
 - SearchPage;
 - ResultsPage;
 - MapPage;
 - AnalyticsPage;
 - StationsPage.
 
-The current frontend still uses local mock station data.
-The backend must become the main source of truth.
+The backend is now the runtime source of truth for station, fuel type, search,
+status, analytics, and forecast data. Local frontend mock station data has been
+removed from the runtime flow.
 
 Target data flow:
 
@@ -39,8 +40,8 @@ React frontend
   -> database
 ```
 
-Frontend mock data can remain only as fallback or development sample data.
-It should not remain the main source of data in the final version.
+Frontend fallback values can remain for defensive UI behavior, but application
+data should come from backend APIs.
 
 ## Production-Style Decisions
 
@@ -53,6 +54,23 @@ It is not treated as a throwaway coursework shortcut.
 The database layer is isolated behind repository classes, so the project can
 later migrate to Oracle Autonomous Database or PostgreSQL without changing
 service and algorithm logic.
+
+### Oracle Docker Direction
+Before moving to Oracle Autonomous Database, the next verification step is to
+run the current schema and seed flow against Oracle Database in Docker.
+
+The expected local verification flow is:
+
+```text
+FastAPI backend
+  -> DATABASE_URL configured for Oracle Docker
+  -> seed_database job
+  -> API endpoints
+  -> React frontend
+```
+
+This step should prove that the current repository/service/database separation
+works beyond SQLite.
 
 ### Oracle Cloud Direction
 Target cloud architecture:
@@ -172,6 +190,10 @@ backend/
   .env.example
 ```
 
+The currently implemented codebase is smaller than this planned structure.
+Import providers, import run metadata, search logs, app metadata, Dockerfiles,
+and Alembic migrations remain future improvements.
+
 ## Layer Responsibilities
 
 ### Routes
@@ -283,12 +305,16 @@ Example response:
   "databaseStatus": "connected",
   "version": "1.0.0",
   "lastPriceUpdate": "2026-05-28T18:00:00",
-  "lastImportStatus": "success"
+  "lastImportStatus": null
 }
 ```
 
 Used by:
 - StatusPanel.
+
+Current V1 note:
+- `lastImportStatus` is kept in the API contract for future import tracking;
+- the public status panel only needs database connection and latest price update.
 
 ### GET /api/fuel-types
 Returns active fuel types.
@@ -346,6 +372,12 @@ Local/demo mode:
 
 ```text
 SQLite
+```
+
+Local Oracle verification mode:
+
+```text
+Oracle Database in Docker
 ```
 
 Cloud production mode:
@@ -1180,7 +1212,7 @@ flowchart TD
 
 ## Development Order
 
-Planned backend implementation order:
+Original planned backend implementation order:
 
 1. Create FastAPI backend skeleton.
 2. Add `/health` and `/api/status`.
@@ -1196,6 +1228,15 @@ Planned backend implementation order:
 12. Add Dockerfile and docker-compose for local run.
 13. Connect frontend to backend API.
 14. Prepare Oracle database configuration later.
+
+Current next implementation target:
+1. Keep SQLite local/demo mode working.
+2. Add Oracle driver dependency and environment examples.
+3. Configure `DATABASE_URL` for Oracle Database in Docker.
+4. Run the existing seed job against Oracle.
+5. Verify the existing API endpoints against Oracle data.
+6. Verify the React frontend against the backend connected to Oracle.
+7. Add Dockerfiles/app deployment pieces after Oracle connectivity is stable.
 
 ## Testing Plan
 
@@ -1231,6 +1272,11 @@ Initial Docker goal:
 - serve React build through Nginx;
 - store SQLite database in a mounted `data/` folder for local/demo mode;
 - keep configuration in environment variables.
+
+Current Docker/Oracle goal:
+- first use the existing Oracle Docker database as an external database target;
+- keep frontend and backend runnable from local development commands;
+- only containerize frontend/backend after database connectivity is verified.
 
 This keeps the project deployable to:
 - local development machine;

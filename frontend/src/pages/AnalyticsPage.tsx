@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import {
+  getFuelForecasts,
   getFuelTrends,
+  type FuelForecastResponse,
   type FuelTrendPointResponse,
   type FuelTrendResponse,
 } from '../api/fuelFinderApi'
@@ -18,6 +20,13 @@ type FuelSummary = {
 }
 
 type ChartSeries = {
+  fuelType: FuelType
+  label: string
+  color: string
+  points: FuelTrendPointResponse[]
+}
+
+type ForecastChartSeries = {
   fuelType: FuelType
   label: string
   color: string
@@ -126,31 +135,20 @@ function buildChartSeries(trends: FuelTrendResponse[]): ChartSeries[] {
 }
 
 function buildForecastSeries(
-  trends: FuelTrendResponse[],
-  forecastDates: string[],
-): ChartSeries[] {
-  return trends
-    .filter((trend) => trend.points.length > 0)
-    .map((trend) => {
-      const fuelType = trend.fuel_type as FuelType
-      const sortedPoints = [...trend.points].sort((firstPoint, secondPoint) =>
-        firstPoint.date.localeCompare(secondPoint.date),
-      )
-      const latestPoint = sortedPoints[sortedPoints.length - 1]
-      const previousPoint = sortedPoints[sortedPoints.length - 2]
-      const dailyChange = previousPoint
-        ? latestPoint.average_price - previousPoint.average_price
-        : 0
+  forecasts: FuelForecastResponse[],
+): ForecastChartSeries[] {
+  return forecasts
+    .filter((forecast) => forecast.points.length > 0)
+    .map((forecast) => {
+      const fuelType = forecast.fuel_type as FuelType
 
       return {
         fuelType,
-        label: trend.label,
+        label: forecast.label,
         color: fuelTypeStyles[fuelType].color,
-        points: forecastDates.map((date, index) => ({
-          date,
-          average_price: Number(
-            (latestPoint.average_price + dailyChange * (index + 1)).toFixed(3),
-          ),
+        points: forecast.points.map((point) => ({
+          date: point.date,
+          average_price: point.predicted_price,
         })),
       }
     })
@@ -352,17 +350,23 @@ function ChartSurface({
 
 export function AnalyticsPage() {
   const [trends, setTrends] = useState<FuelTrendResponse[]>([])
+  const [forecasts, setForecasts] = useState<FuelForecastResponse[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {
-    const loadFuelTrends = async () => {
+    const loadAnalyticsData = async () => {
       setIsLoading(true)
       setErrorMessage(null)
 
       try {
-        const apiTrends = await getFuelTrends()
+        const [apiTrends, apiForecasts] = await Promise.all([
+          getFuelTrends(),
+          getFuelForecasts(),
+        ])
+
         setTrends(apiTrends.trends)
+        setForecasts(apiForecasts.forecasts)
       } catch {
         setErrorMessage('Could not load analytics data from the API.')
       } finally {
@@ -370,27 +374,42 @@ export function AnalyticsPage() {
       }
     }
 
-    void loadFuelTrends()
+    void loadAnalyticsData()
   }, [])
 
   const latestTrendDate = useMemo(() => getLatestTrendDate(trends), [trends])
+
   const chartPeriodLabel = useMemo(
     () => formatMonthYear(latestTrendDate),
     [latestTrendDate],
   )
+
   const historyDates = useMemo(
     () => getSortedHistoryDates(trends).slice(-4),
     [trends],
   )
-  const forecastDates = useMemo(
-    () => getForecastDates(latestTrendDate),
-    [latestTrendDate],
-  )
+
+  const forecastDates = useMemo(() => {
+    const datesFromForecasts = Array.from(
+      new Set(
+        forecasts.flatMap((forecast) =>
+          forecast.points.map((point) => point.date),
+        ),
+      ),
+    ).sort()
+
+    return datesFromForecasts.length > 0
+      ? datesFromForecasts
+      : getForecastDates(latestTrendDate)
+  }, [forecasts, latestTrendDate])
+
   const historySeries = useMemo(() => buildChartSeries(trends), [trends])
+
   const forecastSeries = useMemo(
-    () => buildForecastSeries(trends, forecastDates),
-    [forecastDates, trends],
+    () => buildForecastSeries(forecasts),
+    [forecasts],
   )
+
   const fuelSummaries = useMemo(() => buildFuelSummaries(trends), [trends])
   const visibleFuelSummaries = fuelSummaries.slice(0, 4)
 
@@ -421,7 +440,7 @@ export function AnalyticsPage() {
             <h2>Forecast</h2>
 
             <div className="analytics-meta-row">
-              <p>Forecast based on current backend price history.</p>
+              <p>Forecast based on backend price history.</p>
               <strong>{chartPeriodLabel}</strong>
             </div>
 
@@ -432,7 +451,7 @@ export function AnalyticsPage() {
             />
 
             <p className="forecast-note">
-              This forecast is estimated from the latest available price trend.
+              This forecast is loaded from the backend forecast API.
             </p>
           </article>
         </div>

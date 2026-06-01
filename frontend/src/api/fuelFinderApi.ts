@@ -81,6 +81,21 @@ export type FuelTrendsResponse = {
   trends: FuelTrendResponse[]
 }
 
+export type FuelForecastPointResponse = {
+  date: string
+  predicted_price: number
+}
+
+export type FuelForecastResponse = {
+  fuel_type: string
+  label: string
+  points: FuelForecastPointResponse[]
+}
+
+export type FuelForecastsResponse = {
+  forecasts: FuelForecastResponse[]
+}
+
 export type StationSearchParams = {
   city?: string
   brand?: string
@@ -145,6 +160,10 @@ export function searchStations(
 
 export function getFuelTrends(): Promise<FuelTrendsResponse> {
   return getJson<FuelTrendsResponse>('/api/analytics/fuel-trends')
+}
+
+export function getFuelForecasts(): Promise<FuelForecastsResponse> {
+  return getJson<FuelForecastsResponse>('/api/analytics/forecast')
 }
 
 export function getStationFilters(): Promise<StationFiltersResponse> {
