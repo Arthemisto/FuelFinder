@@ -50,6 +50,7 @@ class StationService:
                 fuel_type_label=price_record.fuel_type.label,
                 price=price_record.price,
                 currency=price_record.currency,
+                recorded_at=price_record.recorded_at,
             )
             for price_record in station.price_records
             if price_record.is_current

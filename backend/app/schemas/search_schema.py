@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, Field
 
 
@@ -6,6 +8,7 @@ class SearchStationFuelResponse(BaseModel):
     fuel_type_label: str
     price: float
     currency: str
+    recorded_at: datetime
 
 
 class SearchStationResponse(BaseModel):

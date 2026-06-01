@@ -66,6 +66,7 @@ class SearchService:
                         fuel_type_label=matching_price_record.fuel_type.label,
                         price=matching_price_record.price,
                         currency=matching_price_record.currency,
+                        recorded_at=matching_price_record.recorded_at,
                     ),
                 )
             )

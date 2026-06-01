@@ -112,7 +112,7 @@ def test_stations_endpoint_returns_list() -> None:
 
     data = response.json()
     assert isinstance(data, list)
-
+    assert "recorded_at" in data[0]["fuels"][0]
 
 def test_station_details_endpoint_returns_station() -> None:
     response = client.get("/api/stations/1")
@@ -313,6 +313,10 @@ def test_search_endpoint_returns_stations_inside_radius() -> None:
         for station in data["stations"]
     )
 
+    assert all(
+        "recorded_at" in station["fuel"]
+        for station in data["stations"]
+    )
 
 def test_search_endpoint_returns_empty_list_when_radius_is_too_small() -> None:
     response = client.get(
@@ -372,3 +376,5 @@ def test_analytics_forecast_endpoint_returns_forecasts() -> None:
     assert "label" in data["forecasts"][0]
     assert "points" in data["forecasts"][0]
     assert "predicted_price" in data["forecasts"][0]["points"][0]
+
+    
