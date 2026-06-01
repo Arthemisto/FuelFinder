@@ -347,7 +347,7 @@ def seed_price_records(db: Session) -> None:
                 PriceRecord.station_id == station.id,
                 PriceRecord.fuel_type_id == fuel_type.id,
                 PriceRecord.source == price_record_data["source"],
-                PriceRecord.is_current.is_(True),
+                PriceRecord.is_current == True,
             )
             .first()
         )

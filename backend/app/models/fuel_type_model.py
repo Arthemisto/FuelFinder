@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Integer, String
+from sqlalchemy import Boolean, Identity, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -7,7 +7,7 @@ from app.database import Base
 class FuelType(Base):
     __tablename__ = "fuel_types"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, Identity(), primary_key=True)
     code: Mapped[str] = mapped_column(String(40), nullable=False, unique=True)
     label: Mapped[str] = mapped_column(String(80), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)

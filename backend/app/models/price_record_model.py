@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Identity, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -9,7 +9,7 @@ from app.database import Base
 class PriceRecord(Base):
     __tablename__ = "price_records"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, Identity(), primary_key=True)
     station_id: Mapped[int] = mapped_column(
         ForeignKey("stations.id"),
         nullable=False,

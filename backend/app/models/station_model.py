@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Float, Integer, String
+from sqlalchemy import Boolean, DateTime, Float, Identity, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -9,7 +9,7 @@ from app.database import Base
 class Station(Base):
     __tablename__ = "stations"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, Identity(), primary_key=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     brand: Mapped[str] = mapped_column(String(80), nullable=False)
     address: Mapped[str] = mapped_column(String(180), nullable=False)

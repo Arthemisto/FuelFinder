@@ -1,12 +1,19 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    app_name: str = "FuelFinder API"
-    app_version: str = "1.0.0"
-    environment: str = "local"
-    database_url: str = "sqlite:///./data/fuelfinder.db"
-    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    app_name: str = Field(default="FuelFinder API", validation_alias="APP_NAME")
+    app_version: str = Field(default="1.0.0", validation_alias="APP_VERSION")
+    environment: str = Field(default="local", validation_alias="ENVIRONMENT")
+    database_url: str = Field(
+        default="sqlite:///./data/fuelfinder.db",
+        validation_alias="DATABASE_URL",
+    )
+    cors_origins: str = Field(
+        default="http://localhost:5173,http://127.0.0.1:5173",
+        validation_alias="CORS_ORIGINS",
+    )
 
     model_config = SettingsConfigDict(
         env_file=".env",

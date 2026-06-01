@@ -32,12 +32,18 @@ def get_db() -> Generator[Session, None, None]:
 
 def check_database_connection() -> bool:
     try:
+        health_query = (
+            "SELECT 1 FROM DUAL"
+            if settings.database_url.startswith("oracle")
+            else "SELECT 1"
+        )
+
         with engine.connect() as connection:
-            connection.execute(text("SELECT 1"))
+            connection.execute(text(health_query))
+
         return True
     except Exception:
         return False
-
 
 def create_database_tables() -> None:
     import app.models
