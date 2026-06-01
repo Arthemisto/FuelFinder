@@ -21,7 +21,7 @@ class StationRepository:
             .options(
                 joinedload(Station.price_records),
             )
-            .filter(Station.is_active.is_(True))
+            .filter(Station.is_active == True)
         )
 
         if city:
@@ -35,7 +35,7 @@ class StationRepository:
                 query.join(PriceRecord)
                 .join(FuelType)
                 .filter(
-                    PriceRecord.is_current.is_(True),
+                    PriceRecord.is_current == True,
                     FuelType.code == fuel_type,
                 )
             )
@@ -59,7 +59,7 @@ class StationRepository:
             )
             .filter(
                 Station.id == station_id,
-                Station.is_active.is_(True),
+                Station.is_active == True,
             )
             .first()
         )
@@ -73,8 +73,8 @@ class StationRepository:
             .join(PriceRecord)
             .join(FuelType)
             .filter(
-                Station.is_active.is_(True),
-                PriceRecord.is_current.is_(True),
+                Station.is_active == True,
+                PriceRecord.is_current == True,
                 FuelType.code == fuel_type,
             )
             .order_by(Station.name.asc())
@@ -84,7 +84,7 @@ class StationRepository:
     def get_active_cities(self) -> list[str]:
         rows = (
             self.db.query(Station.city)
-            .filter(Station.is_active.is_(True))
+            .filter(Station.is_active == True)
             .distinct()
             .order_by(Station.city.asc())
             .all()
@@ -95,7 +95,7 @@ class StationRepository:
     def get_active_brands(self) -> list[str]:
         rows = (
             self.db.query(Station.brand)
-            .filter(Station.is_active.is_(True))
+            .filter(Station.is_active == True)
             .distinct()
             .order_by(Station.brand.asc())
             .all()

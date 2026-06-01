@@ -10,7 +10,7 @@ class FuelTypeRepository:
     def get_active_fuel_types(self) -> list[FuelType]:
         return (
             self.db.query(FuelType)
-            .filter(FuelType.is_active.is_(True))
+            .filter(FuelType.is_active == True)
             .order_by(FuelType.label.asc())
             .all()
         )
