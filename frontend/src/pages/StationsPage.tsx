@@ -22,6 +22,18 @@ const fuelTypeOptions: { value: FuelType | 'all'; label: string }[] = [
   { value: 'electric', label: 'Electric' },
 ]
 
+function formatUpdateDate(recordedAt?: string): string {
+  if (!recordedAt) {
+    return 'No update date'
+  }
+
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(new Date(recordedAt))
+}
+
 function mapApiStationToStation(
   station: StationResponse,
   fuelType: FuelType | 'all',
@@ -43,7 +55,7 @@ function mapApiStationToStation(
     price: selectedFuel?.price ?? 0,
     currency: 'EUR',
     distanceKm: 0,
-    lastUpdate: 'Live API data',
+    lastUpdate: formatUpdateDate(selectedFuel?.recorded_at),
   }
 }
 

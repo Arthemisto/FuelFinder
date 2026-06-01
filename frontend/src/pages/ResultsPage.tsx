@@ -23,6 +23,18 @@ const resultModes: { mode: ResultMode; label: string }[] = [
   { mode: 'bestValue', label: 'Best value' },
 ]
 
+function formatUpdateDate(recordedAt?: string): string {
+  if (!recordedAt) {
+    return 'No update date'
+  }
+
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(new Date(recordedAt))
+}
+
 function mapSearchStationToStation(
   station: SearchStationResponse,
   fuelType: FuelType,
@@ -39,7 +51,7 @@ function mapSearchStationToStation(
     price: station.fuel.price,
     currency: 'EUR',
     distanceKm: station.distance_km,
-    lastUpdate: 'Live API data',
+    lastUpdate: formatUpdateDate(station.fuel.recorded_at),
   }
 }
 
@@ -63,7 +75,7 @@ function mapApiStationToStation(
     price: selectedFuel?.price ?? 0,
     currency: 'EUR',
     distanceKm: 0,
-    lastUpdate: 'Live API data',
+    lastUpdate: formatUpdateDate(selectedFuel?.recorded_at),
   }
 }
 

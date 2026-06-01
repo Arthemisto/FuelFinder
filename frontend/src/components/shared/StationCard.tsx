@@ -35,6 +35,8 @@ export function StationCard({
         {station.address}, {station.city}
       </span>
 
+      <span>Updated {station.lastUpdate}</span>
+
       <div className="station-card-actions">
         <button
           type="button"

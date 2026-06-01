@@ -10,6 +10,7 @@ export type StationFuelPriceResponse = {
   fuel_type_label: string
   price: number
   currency: string
+  recorded_at: string
 }
 
 export type StationResponse = {
@@ -43,6 +44,7 @@ export type SearchStationFuelResponse = {
   fuel_type_label: string
   price: number
   currency: string
+  recorded_at: string
 }
 
 export type SearchStationResponse = {
