@@ -1,3 +1,4 @@
+import { RotateCcw } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import {
@@ -9,14 +10,23 @@ import {
 } from '../api/fuelFinderApi'
 import type { FuelType } from '../types/station'
 
+type HistoryRange = '1w' | '1m' | '3m' | '6m' | '1y'
+
 type FuelSummary = {
   fuelType: FuelType
   label: string
-  averagePrice: number
-  cheapestPrice: number
   pointCount: number
   color: string
   swatchClassName: string
+}
+
+type SelectedFuelStats = {
+  minPrice: number
+  averagePrice: number
+  maxPrice: number
+  currentPrice: number
+  currency: 'EUR'
+  pointCount: number
 }
 
 type ChartSeries = {
@@ -31,6 +41,32 @@ type ForecastChartSeries = {
   label: string
   color: string
   points: FuelTrendPointResponse[]
+}
+
+const historyRangeOptions: { value: HistoryRange; label: string; days: number }[] = [
+  { value: '1w', label: '1W', days: 7 },
+  { value: '1m', label: '1M', days: 30 },
+  { value: '3m', label: '3M', days: 90 },
+  { value: '6m', label: '6M', days: 180 },
+  { value: '1y', label: '1Y', days: 366 },
+]
+
+const fuelTypeOrder: FuelType[] = [
+  'diesel',
+  'diesel_plus',
+  'lpg',
+  'petrol95',
+  'petrol98',
+  'electric',
+]
+
+const fuelTypeLabels: Record<FuelType, string> = {
+  diesel: 'Diesel',
+  diesel_plus: 'Diesel+',
+  lpg: 'LPG',
+  petrol95: 'Petrol 95',
+  petrol98: 'Petrol 98',
+  electric: 'EV',
 }
 
 const fuelTypeStyles: Record<
@@ -67,10 +103,66 @@ function parseTrendDate(date: string): Date {
   return new Date(`${date}T00:00:00`)
 }
 
+// function getVisibleChartDateLabels(dates: string[]): string[] {
+//   if (dates.length <= 5) {
+//     return dates.map((date) => formatShortDate(parseTrendDate(date)))
+//   }
+
+//   const labelCount = 5
+//   const lastIndex = dates.length - 1
+
+//   return Array.from({ length: labelCount }, (_, index) => {
+//     const dateIndex = Math.round((index / (labelCount - 1)) * lastIndex)
+
+//     return formatShortDate(parseTrendDate(dates[dateIndex]))
+//   })
+// }
+
+function formatChartDateLabel(date: Date, showYear: boolean): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    month: 'short',
+    year: showYear ? 'numeric' : undefined,
+    day: showYear ? undefined : 'numeric',
+  }).format(date)
+}
+
+function getVisibleChartDateLabels(dates: string[]): string[] {
+  if (dates.length === 0) {
+    return []
+  }
+
+  if (dates.length <= 7) {
+    return dates.map((date) => formatShortDate(parseTrendDate(date)))
+  }
+
+  const labelCount = dates.length > 90 ? 4 : 5
+  const lastIndex = dates.length - 1
+  const showYear = dates.length > 90
+
+  return Array.from({ length: labelCount }, (_, index) => {
+    const dateIndex = Math.round((index / (labelCount - 1)) * lastIndex)
+    const date = parseTrendDate(dates[dateIndex])
+
+    return formatChartDateLabel(date, showYear)
+  })
+}
+
 function formatShortDate(date: Date): string {
   return new Intl.DateTimeFormat('en-GB', {
     month: 'short',
     day: 'numeric',
+  }).format(date)
+}
+
+function formatNumericDate(date: Date | null): string {
+  if (!date) {
+    return 'No update date'
+  }
+
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
   }).format(date)
 }
 
@@ -116,6 +208,65 @@ function getForecastDates(latestDate: Date | null): string[] {
   })
 }
 
+function getRangeStartDate(
+  latestDate: Date | null,
+  selectedRange: HistoryRange,
+): Date | null {
+  if (!latestDate) {
+    return null
+  }
+
+  const range = historyRangeOptions.find(
+    (option) => option.value === selectedRange,
+  )
+
+  const startDate = new Date(latestDate)
+  startDate.setDate(startDate.getDate() - ((range?.days ?? 7) - 1))
+
+  return startDate
+}
+
+function filterTrendPointsByRange(
+  points: FuelTrendPointResponse[],
+  startDate: Date | null,
+  latestDate: Date | null,
+): FuelTrendPointResponse[] {
+  if (!startDate || !latestDate) {
+    return points
+  }
+
+  return points.filter((point) => {
+    const pointDate = parseTrendDate(point.date)
+
+    return pointDate >= startDate && pointDate <= latestDate
+  })
+}
+
+function getFilteredTrends(
+  trends: FuelTrendResponse[],
+  selectedRange: HistoryRange,
+  selectedFuelType: FuelType | null,
+): FuelTrendResponse[] {
+  const latestDate = getLatestTrendDate(trends)
+  const startDate = getRangeStartDate(latestDate, selectedRange)
+
+  return fuelTypeOrder.map((fuelType) => {
+    const trend = trends.find((item) => item.fuel_type === fuelType)
+    const points = trend
+      ? filterTrendPointsByRange(trend.points, startDate, latestDate)
+      : []
+
+    return {
+      fuel_type: fuelType,
+      label: fuelTypeLabels[fuelType],
+      points:
+        selectedFuelType === null || selectedFuelType === fuelType
+          ? points
+          : [],
+    }
+  })
+}
+
 function buildChartSeries(trends: FuelTrendResponse[]): ChartSeries[] {
   return trends
     .filter((trend) => trend.points.length > 0)
@@ -124,13 +275,15 @@ function buildChartSeries(trends: FuelTrendResponse[]): ChartSeries[] {
 
       return {
         fuelType,
-        label: trend.label,
+        label: fuelTypeLabels[fuelType],
         color: fuelTypeStyles[fuelType].color,
         points: trend.points,
       }
     })
-    .sort((firstFuel, secondFuel) =>
-      firstFuel.label.localeCompare(secondFuel.label),
+    .sort(
+      (firstFuel, secondFuel) =>
+        fuelTypeOrder.indexOf(firstFuel.fuelType) -
+        fuelTypeOrder.indexOf(secondFuel.fuelType),
     )
 }
 
@@ -144,7 +297,7 @@ function buildForecastSeries(
 
       return {
         fuelType,
-        label: forecast.label,
+        label: fuelTypeLabels[fuelType],
         color: fuelTypeStyles[fuelType].color,
         points: forecast.points.map((point) => ({
           date: point.date,
@@ -152,33 +305,52 @@ function buildForecastSeries(
         })),
       }
     })
-    .sort((firstFuel, secondFuel) =>
-      firstFuel.label.localeCompare(secondFuel.label),
+    .sort(
+      (firstFuel, secondFuel) =>
+        fuelTypeOrder.indexOf(firstFuel.fuelType) -
+        fuelTypeOrder.indexOf(secondFuel.fuelType),
     )
 }
 
 function buildFuelSummaries(trends: FuelTrendResponse[]): FuelSummary[] {
-  return trends
-    .filter((trend) => trend.points.length > 0)
-    .map((trend) => {
-      const prices = trend.points.map((point) => point.average_price)
-      const totalPrice = prices.reduce((sum, price) => sum + price, 0)
-      const averagePrice = totalPrice / prices.length
-      const fuelType = trend.fuel_type as FuelType
+  return fuelTypeOrder.map((fuelType) => {
+    const trend = trends.find((item) => item.fuel_type === fuelType)
 
-      return {
-        fuelType,
-        label: trend.label,
-        averagePrice,
-        cheapestPrice: Math.min(...prices),
-        pointCount: trend.points.length,
-        color: fuelTypeStyles[fuelType].color,
-        swatchClassName: fuelTypeStyles[fuelType].swatchClassName,
-      }
-    })
-    .sort((firstFuel, secondFuel) =>
-      firstFuel.label.localeCompare(secondFuel.label),
-    )
+    return {
+      fuelType,
+      label: fuelTypeLabels[fuelType],
+      pointCount: trend?.points.length ?? 0,
+      color: fuelTypeStyles[fuelType].color,
+      swatchClassName: fuelTypeStyles[fuelType].swatchClassName,
+    }
+  })
+}
+
+function getSelectedFuelStats(
+  selectedFuelType: FuelType | null,
+  trends: FuelTrendResponse[],
+): SelectedFuelStats | null {
+  if (!selectedFuelType) {
+    return null
+  }
+
+  const trend = trends.find((item) => item.fuel_type === selectedFuelType)
+
+  if (!trend || trend.points.length === 0) {
+    return null
+  }
+
+  const prices = trend.points.map((point) => point.average_price)
+  const totalPrice = prices.reduce((sum, price) => sum + price, 0)
+
+  return {
+    minPrice: Math.min(...prices),
+    averagePrice: totalPrice / prices.length,
+    maxPrice: Math.max(...prices),
+    currentPrice: trend.points[trend.points.length - 1].average_price,
+    currency: 'EUR',
+    pointCount: trend.points.length,
+  }
 }
 
 function getChartPointCoordinate(
@@ -219,7 +391,6 @@ function getChartPointCoordinate(
   return { x, y }
 }
 
-
 function buildPolylinePoints(
   points: FuelTrendPointResponse[],
   dates: string[],
@@ -239,9 +410,6 @@ function buildPolylinePoints(
       return `${x.toFixed(2)},${y.toFixed(2)}`
     })
     .join(' ')
-}
-type FuelLegendProps = {
-  items: FuelSummary[]
 }
 
 function renderChartPointMarkers(
@@ -264,24 +432,61 @@ function renderChartPointMarkers(
         key={`${item.fuelType}-${point.date}`}
         cx={x}
         cy={y}
-        r="1.4"
+        r="0.75"
         fill={item.color}
       />
     )
   })
 }
 
-function FuelLegend({ items }: FuelLegendProps) {
+type FuelLegendProps = {
+  items: FuelSummary[]
+  selectedFuelType: FuelType | null
+  selectedFuelStats: SelectedFuelStats | null
+  onSelectFuelType: (fuelType: FuelType) => void
+}
+
+function FuelLegend({
+  items,
+  selectedFuelType,
+  selectedFuelStats,
+  onSelectFuelType,
+}: FuelLegendProps) {
+  if (selectedFuelType && !selectedFuelStats) {
+    return (
+      <div className="fuel-selected-summary">
+        <strong>{fuelTypeLabels[selectedFuelType]}</strong>
+        <span>No history</span>
+      </div>
+    )
+  }
+
+  if (selectedFuelType && selectedFuelStats) {
+    return (
+      <div className="fuel-selected-summary">
+        <strong>{fuelTypeLabels[selectedFuelType]}</strong>
+        <span>Min: {selectedFuelStats.minPrice.toFixed(3)} EUR</span>
+        <span>Avg: {selectedFuelStats.averagePrice.toFixed(3)} EUR</span>
+        <span>Max: {selectedFuelStats.maxPrice.toFixed(3)} EUR</span>
+        <span>Current: {selectedFuelStats.currentPrice.toFixed(3)} EUR</span>
+      </div>
+    )
+  }
+
   return (
-    <ul className="fuel-update-list">
+    <ul className="fuel-update-list fuel-update-list-buttons">
       {items.map((fuel) => (
         <li key={fuel.fuelType}>
-          <span className={`fuel-swatch ${fuel.swatchClassName}`} />
-          <strong>{fuel.label}</strong>
-          <span>
-            avg {fuel.averagePrice.toFixed(3)} EUR - min{' '}
-            {fuel.cheapestPrice.toFixed(3)} EUR - {fuel.pointCount} points
-          </span>
+          <button
+            type="button"
+            className="fuel-legend-button"
+            onClick={() => onSelectFuelType(fuel.fuelType)}
+          >
+            <span className={`fuel-swatch ${fuel.swatchClassName}`} />
+            <strong>{fuel.label}</strong>
+          </button>
+
+          <span>{fuel.pointCount > 0 ? `${fuel.pointCount} points` : 'No history'}</span>
         </li>
       ))}
     </ul>
@@ -299,7 +504,7 @@ function ChartSurface({
   series,
   variant = 'history',
 }: ChartSurfaceProps) {
-  const visibleDates = dates.map((date) => formatShortDate(parseTrendDate(date)))
+    const visibleDates = getVisibleChartDateLabels(dates)
 
   return (
     <div
@@ -309,28 +514,37 @@ function ChartSurface({
           : 'chart-surface'
       }
     >
-      <svg
-        className="trend-chart-svg"
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
-        aria-hidden="true"
-      >
-{series.map((item, index) => (
-  <g key={item.fuelType}>
-    <polyline
-      points={buildPolylinePoints(item.points, dates, index, series.length)}
-      fill="none"
-      stroke={item.color}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="1.6"
-      vectorEffect="non-scaling-stroke"
-    />
+      {series.length === 0 ? (
+        <div className="chart-empty-state">No history</div>
+      ) : (
+        <svg
+          className="trend-chart-svg"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          {series.map((item, index) => (
+            <g key={item.fuelType}>
+              <polyline
+                points={buildPolylinePoints(
+                  item.points,
+                  dates,
+                  index,
+                  series.length,
+                )}
+                fill="none"
+                stroke={item.color}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="1.6"
+                vectorEffect="non-scaling-stroke"
+              />
 
-    {renderChartPointMarkers(item, dates, index, series.length)}
-  </g>
-))}
-      </svg>
+              {renderChartPointMarkers(item, dates, index, series.length)}
+            </g>
+          ))}
+        </svg>
+      )}
 
       <div
         className={
@@ -351,6 +565,8 @@ function ChartSurface({
 export function AnalyticsPage() {
   const [trends, setTrends] = useState<FuelTrendResponse[]>([])
   const [forecasts, setForecasts] = useState<FuelForecastResponse[]>([])
+  const [selectedRange, setSelectedRange] = useState<HistoryRange>('1w')
+  const [selectedFuelType, setSelectedFuelType] = useState<FuelType | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
@@ -384,9 +600,14 @@ export function AnalyticsPage() {
     [latestTrendDate],
   )
 
+  const filteredTrends = useMemo(
+    () => getFilteredTrends(trends, selectedRange, selectedFuelType),
+    [trends, selectedRange, selectedFuelType],
+  )
+
   const historyDates = useMemo(
-    () => getSortedHistoryDates(trends).slice(-4),
-    [trends],
+    () => getSortedHistoryDates(filteredTrends),
+    [filteredTrends],
   )
 
   const forecastDates = useMemo(() => {
@@ -403,19 +624,40 @@ export function AnalyticsPage() {
       : getForecastDates(latestTrendDate)
   }, [forecasts, latestTrendDate])
 
-  const historySeries = useMemo(() => buildChartSeries(trends), [trends])
+  const historySeries = useMemo(
+    () => buildChartSeries(filteredTrends),
+    [filteredTrends],
+  )
 
   const forecastSeries = useMemo(
     () => buildForecastSeries(forecasts),
     [forecasts],
   )
 
-  const fuelSummaries = useMemo(() => buildFuelSummaries(trends), [trends])
-  const visibleFuelSummaries = fuelSummaries.slice(0, 4)
+  const fuelSummaries = useMemo(
+    () => buildFuelSummaries(filteredTrends),
+    [filteredTrends],
+  )
+
+  const selectedFuelStats = useMemo(
+    () => getSelectedFuelStats(selectedFuelType, filteredTrends),
+    [selectedFuelType, filteredTrends],
+  )
+
+  const handleResetHistory = () => {
+    setSelectedRange('1w')
+    setSelectedFuelType(null)
+  }
+
+  const handleSelectFuelType = (fuelType: FuelType) => {
+    setSelectedFuelType((currentFuelType) =>
+      currentFuelType === fuelType ? null : fuelType,
+    )
+  }
 
   return (
     <section className="page-content analytics-page">
-      <h1>Fuel price trends</h1>
+      <h1 className="sr-only">Fuel price trends</h1>
 
       {isLoading && <p>Loading analytics data...</p>}
 
@@ -424,16 +666,51 @@ export function AnalyticsPage() {
       {!isLoading && !errorMessage && (
         <div className="analytics-grid">
           <article className="analytics-card">
-            <h2>History</h2>
+            <div className="analytics-card-header">
+              <h2>History</h2>
+
+              <button
+                type="button"
+                className="history-reset-button"
+                title="Reset history filters"
+                aria-label="Reset history filters"
+                onClick={handleResetHistory}
+              >
+                <RotateCcw aria-hidden="true" size={18} strokeWidth={2.5} />
+              </button>
+            </div>
+
+            <div className="history-range-buttons" aria-label="History range">
+              {historyRangeOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={
+                    selectedRange === option.value
+                      ? 'history-range-button history-range-button-active'
+                      : 'history-range-button'
+                  }
+                  onClick={() => setSelectedRange(option.value)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
 
             <div className="analytics-meta-row">
-              <p>Latest fuel updates from:</p>
+              <p>Latest update: {formatNumericDate(latestTrendDate)}</p>
               <strong>{chartPeriodLabel}</strong>
             </div>
 
             <ChartSurface dates={historyDates} series={historySeries} />
+            
 
-            <FuelLegend items={visibleFuelSummaries} />
+            <FuelLegend
+              items={fuelSummaries}
+              selectedFuelType={selectedFuelType}
+              selectedFuelStats={selectedFuelStats}
+              onSelectFuelType={handleSelectFuelType}
+            />
           </article>
 
           <article className="analytics-card">
@@ -451,7 +728,8 @@ export function AnalyticsPage() {
             />
 
             <p className="forecast-note">
-              This forecast is loaded from the backend forecast API.
+              Algorithmic forecast for demo purposes only. May vary from actual
+              market prices.
             </p>
           </article>
         </div>

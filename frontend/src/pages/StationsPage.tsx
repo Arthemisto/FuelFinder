@@ -123,7 +123,7 @@ export function StationsPage({ onShowOnMap }: StationsPageProps) {
 
   return (
     <section className="page-content stations-page">
-      <h1>All stations</h1>
+      <h1 className="sr-only">All stations</h1>
 
       <div className="station-filters">
         <input

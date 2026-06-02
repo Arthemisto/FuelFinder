@@ -28,6 +28,18 @@ const fuelTypeLabels: Record<FuelType, string> = {
   electric: 'Electric',
 }
 
+function formatUpdateDate(recordedAt?: string): string {
+  if (!recordedAt) {
+    return 'No update date'
+  }
+
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(new Date(recordedAt))
+}
+
 function createStationIcon(isHighlighted: boolean, label: number) {
   return divIcon({
     className: 'leaflet-station-marker-shell',
@@ -66,7 +78,7 @@ function mapApiStationToStation(
     price: selectedFuel?.price ?? 0,
     currency: 'EUR',
     distanceKm: 0,
-    lastUpdate: 'Live API data',
+    lastUpdate: formatUpdateDate(selectedFuel?.recorded_at),
   }
 }
 
@@ -86,7 +98,7 @@ function mapSearchStationToStation(
     price: station.fuel.price,
     currency: 'EUR',
     distanceKm: station.distance_km,
-    lastUpdate: 'Live API data',
+    lastUpdate: formatUpdateDate(station.fuel.recorded_at),
   }
 }
 
@@ -165,7 +177,7 @@ export function MapPage({
     <section className="page-content map-page">
       <div className="map-page-header">
         <div>
-          <h1>Station map</h1>
+          <h1 className="sr-only">Station map</h1>
           <p>
             {visibleStations.length} stations shown on map
             {searchRequest && isRadiusApplied
@@ -174,12 +186,14 @@ export function MapPage({
           </p>
         </div>
 
+        <p className="map-loading-status">
+          {isLoading ? 'Loading map stations...' : ''}
+        </p>
+
         <button type="button" className="secondary-action" onClick={onOpenList}>
           Open list view
         </button>
       </div>
-
-      {isLoading && <p>Loading map stations...</p>}
 
       {errorMessage && <p>{errorMessage}</p>}
 
@@ -228,11 +242,6 @@ export function MapPage({
           })}
         </MapContainer>
       </div>
-
-      <p className="map-note">
-        Map tiles are loaded from OpenStreetMap with normal browser caching. The
-        app uses backend station data from the FuelFinder API.
-      </p>
     </section>
   )
 }

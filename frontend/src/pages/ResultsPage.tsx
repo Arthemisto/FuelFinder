@@ -162,7 +162,7 @@ export function ResultsPage({
 
   return (
     <section className="page-content results-page">
-      <h1>Compare station results</h1>
+      <h1 className="sr-only">Compare station results</h1>
 
       {searchRequest && (
         <div className="search-summary">
