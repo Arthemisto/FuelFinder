@@ -10,6 +10,10 @@ type SearchPageProps = {
 
 const defaultLocationLabel = 'Riga, Latvia'
 const defaultLocationStatus = 'Default search center: Riga, Latvia.'
+const defaultCoordinates = {
+  latitude: 56.9496,
+  longitude: 24.1052,
+}
 
 const fallbackFuelTypeOptions: { value: FuelType; label: string }[] = [
   { value: 'diesel', label: 'Diesel' },
@@ -27,10 +31,7 @@ export function SearchPage({ onSearch }: SearchPageProps) {
   const [fuelTypeOptions, setFuelTypeOptions] = useState(
     fallbackFuelTypeOptions,
   )
-  const [coordinates, setCoordinates] = useState<{
-    latitude: number
-    longitude: number
-  } | null>(null)
+  const [coordinates, setCoordinates] = useState(defaultCoordinates)
   const [locationStatus, setLocationStatus] = useState(defaultLocationStatus)
 
   useEffect(() => {
@@ -57,14 +58,18 @@ export function SearchPage({ onSearch }: SearchPageProps) {
       location,
       radiusKm,
       fuelType,
-      latitude: coordinates?.latitude,
-      longitude: coordinates?.longitude,
+      latitude: coordinates.latitude,
+      longitude: coordinates.longitude,
     })
   }
 
   const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) {
-      setLocationStatus('Geolocation is not supported by this browser.')
+      setCoordinates(defaultCoordinates)
+      setLocation(defaultLocationLabel)
+      setLocationStatus(
+        'Geolocation is not supported. Default Riga center selected.',
+      )
       return
     }
 
@@ -80,9 +85,11 @@ export function SearchPage({ onSearch }: SearchPageProps) {
         setLocationStatus('Current location selected.')
       },
       () => {
-        setCoordinates(null)
+        setCoordinates(defaultCoordinates)
         setLocation(defaultLocationLabel)
-        setLocationStatus('Location permission was denied or unavailable.')
+        setLocationStatus(
+          'Location permission was denied. Default Riga center selected.',
+        )
       },
     )
   }
