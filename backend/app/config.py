@@ -14,6 +14,14 @@ class Settings(BaseSettings):
         default="http://localhost:5173,http://127.0.0.1:5173",
         validation_alias="CORS_ORIGINS",
     )
+    oracle_wallet_location: str | None = Field(
+        default=None,
+        validation_alias="ORACLE_WALLET_LOCATION",
+    )
+    oracle_wallet_password: str | None = Field(
+        default=None,
+        validation_alias="ORACLE_WALLET_PASSWORD",
+    )
 
     model_config = SettingsConfigDict(
         env_file=".env",

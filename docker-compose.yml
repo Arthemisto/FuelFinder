@@ -8,6 +8,8 @@ services:
       - .env.compose
     ports:
       - "8000:8000"
+    volumes:
+      - ${ORACLE_WALLET_HOST_PATH}:/opt/oracle/wallet:ro
 
   frontend:
     build:
