@@ -2,29 +2,60 @@
 
 ## Purpose
 
-This document describes the current runtime flow between the five frontend pages,
-the FastAPI backend, and the database.
+This document describes the current runtime flow between the five frontend
+pages, the FastAPI backend, and the database.
 
-The application no longer uses frontend mock station data as the runtime source
+The application does not use frontend mock station data as the runtime source
 of truth. Pages load data through `frontend/src/api/fuelFinderApi.ts`.
 
-The same page flow has been verified with both the SQLite local/demo database
-and Oracle Database running in Docker. The frontend/backend API contracts did
-not need to change for the Oracle-backed run.
+The same page flow has been verified with:
+- SQLite local/demo database;
+- Oracle Database running in Docker;
+- backend Docker container;
+- frontend Nginx container with `/api` reverse proxy;
+- Docker Compose frontend + backend stack with external Oracle.
+
+## Runtime Data Flow
+
+Development:
+
+```text
+React page
+  -> fuelFinderApi.ts
+  -> FastAPI backend
+  -> database
+```
+
+Container/production-like:
+
+```text
+Browser
+  -> Nginx frontend container
+  -> /api reverse proxy
+  -> FastAPI backend container
+  -> database
+```
+
+Current database targets:
+
+```text
+SQLite local/demo
+Oracle Database in Docker
+```
 
 ## Main User Flow
 
 ```text
 SearchPage
-  -> user enters location, radius, and fuel type
+  -> default search center is Riga, Latvia
+  -> user chooses radius and fuel type
   -> user can request browser current location
   -> user clicks Find stations
   -> App stores SearchRequest
   -> App opens ResultsPage
 
 ResultsPage
-  -> loads backend search results when coordinates are available
-  -> otherwise loads backend stations filtered by fuel type
+  -> loads backend search results using coordinates
   -> user chooses comparison mode:
        Cheapest
        Nearest
@@ -43,11 +74,13 @@ StationsPage
   -> loads backend stations
   -> loads backend filter values
   -> user can filter by text, fuel type, and brand
+  -> shows recorded update dates for current prices
   -> Map opens MapPage with selected station highlighted
 
 AnalyticsPage
   -> loads backend fuel history
   -> loads backend forecast
+  -> frontend filters history by range and fuel type
   -> renders history and forecast charts
 
 StatusPanel
@@ -70,53 +103,32 @@ State responsibilities:
 - `selectedStationId` controls which map marker is highlighted;
 - `searchRequest` stores the latest search form values.
 
-## Runtime Data Flow
-
-```text
-React page
-  -> fuelFinderApi.ts
-  -> FastAPI endpoint
-  -> service layer
-  -> repository layer
-  -> database
-  -> response rendered by React page
-```
-
-Supported local/demo database:
-
-```text
-SQLite
-```
-
-Verified local Oracle database:
-
-```text
-Oracle Database in Docker
-```
-
 ## Page 1: SearchPage
 
 Purpose:
-- collect user search input.
+- collect search parameters without pretending to support address geocoding.
 
 Current content:
-- page title: `Find nearby fuel stations`;
-- location input;
+- locked/read-only location field;
+- default location: `Riga, Latvia`;
+- default coordinates: Riga center;
+- status text explaining default Riga center;
 - radius select;
 - fuel type select loaded from backend fuel types;
 - `Find stations` button;
 - `Use current location` button.
 
 Current behavior:
-- form values are controlled with React state;
+- default search uses Riga center coordinates;
 - `Use current location` uses browser geolocation;
-- if permission is granted, latitude and longitude are stored in `SearchRequest`;
+- if permission is granted, latitude and longitude are updated;
+- if permission is denied/unavailable, the page falls back to Riga center;
 - `Find stations` sends the request to `App`;
 - `App` stores the request and opens `ResultsPage`.
 
 Current limitation:
-- manual location text is not geocoded;
-- radius filtering is only real when coordinates are available.
+- manual location text and street/city geocoding are intentionally not
+  implemented in V1.
 
 ## Page 2: ResultsPage
 
@@ -124,10 +136,10 @@ Purpose:
 - compare matching station options.
 
 Current behavior:
-- if coordinates are available, calls `/api/search`;
-- if coordinates are not available, calls `/api/stations` filtered by fuel type;
+- calls `/api/search` using the stored coordinates, radius, and fuel type;
 - sorts loaded stations by cheapest, nearest, or best value;
 - shows top 3 station cards;
+- station cards show formatted current price update dates;
 - `Map` selects a station and opens MapPage;
 - `Directions` opens Google Maps route using station coordinates.
 
@@ -147,7 +159,9 @@ Current behavior:
 - when a search request with coordinates exists, loads `/api/search`;
 - otherwise loads `/api/stations`;
 - renders Leaflet/OpenStreetMap markers;
-- highlights selected station;
+- highlights selected station or top search results;
+- loading status is shown in the map header to avoid layout jumps;
+- map popups show fuel, price, distance when available, and update date;
 - opens StationsPage through `Open list view`.
 
 ## Page 4: AnalyticsPage
@@ -158,8 +172,28 @@ Purpose:
 Current behavior:
 - loads `/api/analytics/fuel-trends`;
 - loads `/api/analytics/forecast`;
-- renders SVG history and forecast charts;
-- shows fuel summary data derived from backend trend points.
+- frontend filters history locally by:
+  - `1W`;
+  - `1M`;
+  - `3M`;
+  - `6M`;
+  - `1Y`;
+- frontend filters by fuel type:
+  - Diesel;
+  - Diesel+;
+  - LPG;
+  - Petrol 95;
+  - Petrol 98;
+  - EV;
+- default history state is `1W + All`;
+- selected fuel view shows min/avg/max/current summary;
+- EV has a stable no-history/empty state;
+- reset returns to `1W + All`;
+- forecast warning says:
+
+```text
+Algorithmic forecast for demo purposes only. May vary from actual market prices.
+```
 
 Forecast ownership:
 - backend calculates forecast data;
@@ -172,9 +206,10 @@ Purpose:
 
 Current behavior:
 - loads stations from `/api/stations`;
-- loads cities and brands from `/api/stations/filters`;
+- loads brands from `/api/stations/filters`;
 - filters by backend fuel type and brand parameters;
 - applies local text filter to the loaded list;
+- shows formatted current price update dates;
 - `Map` selects station and opens MapPage.
 
 ## Status Panel
@@ -207,10 +242,11 @@ GET /api/analytics/forecast
 
 ```mermaid
 flowchart TD
+  DefaultRiga["Default Riga center"] --> SearchPage
   BrowserGeolocation["Browser geolocation"] -->|optional coordinates| SearchPage
   SearchPage["SearchPage"] -->|onSearch request| App["App state"]
   App -->|searchRequest| ResultsPage
-  ResultsPage -->|API search/stations| Backend["FastAPI backend"]
+  ResultsPage -->|API search| Backend["FastAPI backend"]
   StationsPage -->|API stations/filters| Backend
   AnalyticsPage -->|API trends/forecast| Backend
   StatusPanel -->|API status| Backend
@@ -223,18 +259,26 @@ flowchart TD
   StationCard -->|Directions| GoogleMaps["Google Maps directions"]
 ```
 
+## Container Flow Diagram
+
+```mermaid
+flowchart TD
+  Browser["Browser http://127.0.0.1:8080"] --> Nginx["Frontend container / Nginx"]
+  Nginx -->|static files| ReactBuild["React build"]
+  Nginx -->|/api proxy| Backend["Backend container / FastAPI"]
+  Backend --> Oracle["External Oracle Docker container oraxe"]
+```
+
 ## Verified Flow
 
 The current flow has been smoke-tested as:
 
 ```text
-React frontend
-  -> FastAPI backend
+Browser
+  -> frontend Nginx container
+  -> backend FastAPI container
   -> Oracle Database running in Docker
 ```
 
-The same frontend/backend API contracts should work with either SQLite or Oracle
-as long as `DATABASE_URL` points to the desired database.
-
-Next flow work is packaging/deployment oriented: containerize backend/frontend
-or prepare the same API flow for Oracle Autonomous Database.
+The same frontend/backend API contracts work with either SQLite or Oracle as
+long as `DATABASE_URL` points to the desired database.

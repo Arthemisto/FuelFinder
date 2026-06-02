@@ -1,12 +1,12 @@
 # FuelFinder Backend Design
 
 ## Purpose
-This document describes the planned backend architecture for FuelFinder.
+This document describes the backend architecture for FuelFinder.
 
 FuelFinder is designed as a small production-style full-stack application, not
 as a simple coursework prototype.
 
-The backend will be built with:
+The backend is built with:
 - Python;
 - FastAPI;
 - Pydantic;
@@ -15,6 +15,8 @@ The backend will be built with:
 - SQLite for local/demo mode;
 - Oracle Database in Docker for local Oracle verification;
 - Oracle Autonomous Database later for cloud production mode;
+- Docker for backend/frontend packaging;
+- Nginx reverse proxy for frontend production serving;
 - object-oriented service, repository, algorithm, provider, and job layers.
 
 ## Core Direction
@@ -121,7 +123,47 @@ Configuration comes from environment variables.
 No secrets are hardcoded.
 ```
 
-## Planned Folder Structure
+## Current Deployment Shape
+
+The app now has a verified local production-like Docker flow:
+
+```text
+Browser
+  -> frontend container: Nginx + React build
+  -> /api reverse proxy
+  -> backend container: FastAPI
+  -> external Oracle Docker container: oraxe
+```
+
+Docker files currently present:
+
+```text
+backend/Dockerfile
+backend/.dockerignore
+frontend/Dockerfile
+frontend/.dockerignore
+frontend/nginx.conf.template
+docker-compose.yml
+.env.compose.example
+```
+
+The real `.env.compose` file is local-only and ignored by git.
+
+Frontend Nginx uses:
+
+```text
+BACKEND_UPSTREAM=backend:8000
+```
+
+in Docker Compose and can use:
+
+```text
+BACKEND_UPSTREAM=host.docker.internal:8000
+```
+
+for manual local Docker tests.
+
+## Folder Structure
 
 ```text
 backend/
@@ -201,8 +243,9 @@ backend/
 ```
 
 The currently implemented codebase is smaller than this planned structure.
-Import providers, import run metadata, search logs, app metadata, Dockerfiles,
-and Alembic migrations remain future improvements.
+Import providers, import run metadata, search logs, app metadata, and Alembic
+migrations remain future improvements. Dockerfiles and Docker Compose are now
+implemented.
 
 ## Layer Responsibilities
 
@@ -341,6 +384,9 @@ Used by:
 - StationsPage;
 - MapPage.
 
+Current price entries include `recorded_at`, so the frontend can display price
+update dates.
+
 ### GET /api/stations/{station_id}
 Returns details for one station.
 
@@ -359,10 +405,10 @@ The backend performs:
 - fuel type filtering;
 - radius filtering;
 - distance calculation;
-- cheapest ranking;
-- nearest ranking;
-- best-value ranking;
-- search log creation.
+- best-value score calculation.
+
+Current V1 note:
+- search logs are planned but not implemented yet.
 
 ### GET /api/analytics/fuel-trends
 Returns recent fuel price history.
@@ -396,8 +442,8 @@ Cloud production mode:
 Oracle Autonomous Database
 ```
 
-The first implementation should use SQLAlchemy models that can work with SQLite
-locally and be adapted to Oracle later through configuration and migrations.
+The current implementation uses SQLAlchemy models that work with SQLite locally
+and Oracle Docker through configuration.
 
 ## Planned Database Tables
 
@@ -671,9 +717,9 @@ Repositories only handle database access.
 StationRepository
 FuelTypeRepository
 PriceRepository
-SearchLogRepository
-MetadataRepository
-ImportRunRepository
+SearchLogRepository        future
+MetadataRepository         future
+ImportRunRepository        future
 ```
 
 ### StationRepository
@@ -702,13 +748,13 @@ insert_price_records(records)
 mark_old_prices_as_not_current(station_id, fuel_type_id)
 ```
 
-### SearchLogRepository
+### SearchLogRepository Future
 
 ```text
 create_search_log(request, result_count)
 ```
 
-### MetadataRepository
+### MetadataRepository Future
 
 ```text
 get_value(key)
@@ -716,7 +762,7 @@ set_value(key, value)
 get_application_status()
 ```
 
-### ImportRunRepository
+### ImportRunRepository Future
 
 ```text
 start_run(source_id)
@@ -755,11 +801,13 @@ calculate_distances(stations, request)
 
 Uses:
 - StationRepository;
-- SearchLogRepository;
-- CheapestRankingStrategy;
-- NearestRankingStrategy;
 - BestValueRankingStrategy;
 - DistanceCalculator.
+
+Future target additions:
+- SearchLogRepository;
+- CheapestRankingStrategy;
+- NearestRankingStrategy.
 
 ### AnalyticsService
 
@@ -899,6 +947,11 @@ python -m app.jobs.collect_prices
 
 ## Backend Class Diagram
 
+The diagram below is the broader target architecture. Current V1 implements the
+core API classes for stations, fuel types, search, analytics, status, forecasting,
+database access, and demo seeding. Import providers, search logging, import run
+metadata, and Alembic migrations remain future improvements.
+
 ```mermaid
 classDiagram
   class Station {
@@ -1036,7 +1089,7 @@ classDiagram
 
   class SearchService {
     -StationRepository station_repository
-    -SearchLogRepository search_log_repository
+    -SearchLogRepository search_log_repository_future
     -DistanceCalculator distance_calculator
     -RankingStrategy cheapest_strategy
     -RankingStrategy nearest_strategy
@@ -1137,7 +1190,7 @@ classDiagram
   StationService --> StationRepository
   StationService --> FuelTypeRepository
   SearchService --> StationRepository
-  SearchService --> SearchLogRepository
+  SearchService --> SearchLogRepository : future
   SearchService --> DistanceCalculator
   SearchService --> RankingStrategy
   AnalyticsService --> PriceRepository
@@ -1168,7 +1221,7 @@ flowchart TD
   Frontend["React frontend"] --> Routes["FastAPI routes"]
   Routes --> Services["Service classes"]
   Services --> Repositories["Repository classes"]
-  Repositories --> Database["SQLite local / Oracle cloud"]
+  Repositories --> Database["SQLite local / Oracle Docker / Oracle cloud future"]
 
   Services --> Ranking["Ranking strategies"]
   Services --> Distance["Distance calculator"]
@@ -1194,17 +1247,16 @@ flowchart TD
   SearchService --> FuelFilter["Filter by fuel type"]
   SearchService --> DistanceCalculator
   DistanceCalculator --> RadiusFilter["Filter by radius"]
-  SearchService --> CheapestRankingStrategy
-  SearchService --> NearestRankingStrategy
   SearchService --> BestValueRankingStrategy
-  SearchService --> SearchLogRepository
-  CheapestRankingStrategy --> SearchResult
-  NearestRankingStrategy --> SearchResult
   BestValueRankingStrategy --> SearchResult
   SearchResult --> ResultsPage["ResultsPage"]
 ```
 
 ## Import Flow
+
+This is the planned import flow for real provider data. Current V1 uses the demo
+seed job and keeps `lastImportStatus` in the API contract for future import
+tracking.
 
 ```mermaid
 flowchart TD
@@ -1242,9 +1294,10 @@ Original planned backend implementation order:
 Current next implementation target:
 1. Keep SQLite local/demo mode working.
 2. Keep Oracle Docker mode working through `DATABASE_URL`.
-3. Add Dockerfiles/app deployment pieces for backend and frontend.
-4. Decide whether local deployment uses SQLite volume mode or external Oracle.
-5. Prepare Oracle Autonomous Database configuration after local app deployment is stable.
+3. Keep Docker Compose app mode working with external Oracle.
+4. Update runbooks and deployment documentation.
+5. Prepare Oracle Cloud VM deployment.
+6. Prepare Oracle Autonomous Database configuration after VM deployment is stable.
 
 ## Testing Plan
 
@@ -1263,29 +1316,41 @@ API tests should verify:
 - `/api/search` returns ranked results;
 - analytics endpoints return valid response shapes.
 
+Latest verified backend test result:
+
+```text
+26 passed
+```
+
 ## Docker Plan
 
-Docker should be added after the backend works locally.
+Docker is now implemented for the backend and frontend.
 
-Planned files:
+Implemented files:
 
 ```text
 backend/Dockerfile
+backend/.dockerignore
+frontend/Dockerfile
+frontend/.dockerignore
+frontend/nginx.conf.template
 docker-compose.yml
-.env.example
+.env.compose.example
 ```
 
-Initial Docker goal:
+Current Docker goal:
 - run FastAPI backend in a container;
 - serve React build through Nginx;
-- store SQLite database in a mounted `data/` folder for local/demo mode;
-- keep configuration in environment variables.
+- proxy `/api` through Nginx to backend;
+- keep Oracle as an external database target first;
+- keep configuration in environment variables;
+- keep secrets out of git.
 
 Current Docker/Oracle status:
-- Oracle Docker is verified as an external database target;
-- frontend and backend are runnable from local development commands;
-- the next Docker work is containerizing backend/frontend around the verified
-  database configuration.
+- Oracle Docker is verified as an external database target.
+- Backend Docker image is verified against Oracle through `host.docker.internal`.
+- Frontend Docker image is verified with Nginx `/api` proxy.
+- Docker Compose is verified for frontend + backend with external Oracle.
 
 This keeps the project deployable to:
 - local development machine;

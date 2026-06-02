@@ -1,73 +1,122 @@
-# React + TypeScript + Vite
+# FuelFinder Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+FuelFinder frontend is a React + TypeScript + Vite application.
 
-Currently, two official plugins are available:
+It provides the user interface for:
+- nearby fuel station search;
+- ranked search results;
+- interactive map view;
+- fuel price history and forecast analytics;
+- all stations list with filters.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Local Development
 
-## React Compiler
+Install dependencies:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```powershell
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Run Vite dev server:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```powershell
+npm run dev
 ```
+
+Default local URL:
+
+```text
+http://localhost:5173
+```
+
+In dev mode the frontend uses Vite and reads API configuration from frontend
+environment variables when needed.
+
+## Production Build
+
+Build static frontend files:
+
+```powershell
+npm run build
+```
+
+Build output:
+
+```text
+frontend/dist/
+```
+
+## Docker Image
+
+The frontend Docker image builds the Vite app and serves `dist/` with Nginx.
+
+Build image:
+
+```powershell
+docker build -t fuelfinder-frontend ./frontend
+```
+
+Run image manually against a backend running on the host machine:
+
+```powershell
+docker run --rm --name fuelfinder-frontend-local -p 8080:80 `
+  -e BACKEND_UPSTREAM="host.docker.internal:8000" `
+  fuelfinder-frontend
+```
+
+Open:
+
+```text
+http://127.0.0.1:8080
+```
+
+## API Proxy
+
+Production frontend uses relative API calls:
+
+```text
+/api/...
+```
+
+Nginx proxies these requests to the backend through:
+
+```text
+BACKEND_UPSTREAM
+```
+
+This keeps the browser on one origin and avoids hardcoding backend URLs into the
+compiled frontend bundle.
+
+## Docker Compose
+
+From the project root, Docker Compose starts:
+- frontend container;
+- backend container;
+- external Oracle Docker database through `host.docker.internal`.
+
+Run:
+
+```powershell
+docker compose --env-file .env.compose up --build
+```
+
+Open:
+
+```text
+http://127.0.0.1:8080
+```
+
+Quick API smoke check through Nginx:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:8080/api/status
+```
+
+## Current UI Notes
+
+- Search starts from the locked default center `Riga, Latvia`.
+- `Use current location` can replace the default coordinates when browser
+  geolocation is allowed.
+- Results and station lists display backend `recorded_at` price timestamps.
+- Analytics history filtering is handled on the frontend.
+- Forecast data is marked as demo algorithm output, not a real market promise.

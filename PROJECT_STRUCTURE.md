@@ -9,7 +9,9 @@ The project is built around:
 - FastAPI backend;
 - SQLAlchemy models and repositories;
 - SQLite local/demo database;
-- verified Oracle Database in Docker support.
+- verified Oracle Database in Docker support;
+- Dockerized backend and frontend services;
+- Docker Compose app stack with an external Oracle container.
 
 The backend is the runtime source of truth for:
 - fuel types;
@@ -26,61 +28,70 @@ Frontend mock station data has been removed from the runtime flow.
 
 Implemented:
 - React frontend with 5 main pages;
-- shared app shell, navigation, header, and status panel;
+- shared app shell, navigation, status panel, and page layout;
 - backend API client in `frontend/src/api/fuelFinderApi.ts`;
-- backend station, fuel type, search, status, analytics, and forecast loading;
+- station/search/map/results/status/analytics loading from backend APIs;
+- `recorded_at` displayed for current station prices;
+- locked default Riga center search with optional browser current location;
+- analytics history range controls and fuel filtering on the frontend;
+- algorithmic forecast warning/disclaimer in the UI;
 - Leaflet/OpenStreetMap map using backend station coordinates;
-- browser current-location support for radius search;
-- FastAPI backend with layered route/service/repository structure;
+- FastAPI backend with route/service/repository structure;
 - SQLite database setup;
-- Oracle Database in Docker setup verified locally;
+- Oracle Database in Docker verified locally;
 - `oracledb` driver support;
-- seed job for pseudo/demo data;
-- Oracle-compatible SQLAlchemy models for stations, fuel types, station fuel availability, and price records;
+- Oracle-compatible SQLAlchemy models;
+- deterministic synthetic demo seed data;
 - backend tests for API endpoints, distance calculation, and forecast calculation;
-- latest verified backend test run: `25 passed`;
-- frontend build and development server verified against the Oracle-backed API.
+- latest verified backend test run: `26 passed`;
+- backend Docker image;
+- frontend Docker image served by Nginx;
+- Nginx `/api` reverse proxy to backend;
+- Docker Compose stack for frontend + backend with external Oracle.
 
 Current limitations:
-- manual location text is not geocoded;
-- radius filtering is only applied when browser coordinates are available;
-- demo data is still seeded from local pseudo-data;
+- manual address/geocoding search is not implemented;
+- default search uses fixed Riga center coordinates unless current location is selected;
+- demo data is synthetic, not real pump-price history;
 - `lastImportStatus` exists in the API schema but is not used in the public UI;
-- Alembic migrations are not configured yet.
+- Alembic migrations are not configured yet;
+- Oracle Autonomous Database cloud setup is still future work.
 
 ## Runtime Data Flow
 
+Development flow:
+
 ```text
-React frontend
+React dev server
   -> frontend API client
-  -> FastAPI routes
-  -> service layer
-  -> repository layer
+  -> FastAPI backend
   -> database
 ```
 
-Local/demo mode:
+Production/container flow:
 
 ```text
-SQLite database at backend/data/fuelfinder.db
+Browser
+  -> Nginx frontend container
+  -> /api reverse proxy
+  -> FastAPI backend container
+  -> Oracle Docker database
 ```
 
-Verified local Oracle mode:
+Database modes:
 
 ```text
-Oracle Database in Docker
-```
-
-Later target:
-
-```text
-Oracle Autonomous Database
+SQLite local/demo: backend/data/fuelfinder.db
+Oracle local: external Docker container oraxe
+Future cloud: Oracle Autonomous Database
 ```
 
 ## Frontend Structure
 
 ```text
 frontend/
+  Dockerfile
+  nginx.conf.template
   src/
     api/
       fuelFinderApi.ts
@@ -100,16 +111,23 @@ frontend/
 ```
 
 Main pages:
-- `SearchPage` collects location, radius, and fuel type.
+- `SearchPage` uses default Riga center or browser current location.
 - `ResultsPage` shows ranked station results from backend APIs.
 - `MapPage` shows backend station coordinates on Leaflet/OpenStreetMap.
-- `AnalyticsPage` shows backend history and backend forecast data.
+- `AnalyticsPage` shows backend history and forecast data, with local UI filters.
 - `StationsPage` shows backend station data with filters.
+
+Frontend production behavior:
+- Vite builds static assets into `dist`;
+- Nginx serves the static frontend;
+- Nginx proxies `/api` to the backend through `BACKEND_UPSTREAM`;
+- production frontend uses relative `/api` requests.
 
 ## Backend Structure
 
 ```text
 backend/
+  Dockerfile
   app/
     main.py
     config.py
@@ -134,7 +152,40 @@ Main backend layers:
 - repositories hide SQLAlchemy queries;
 - models define database tables;
 - algorithms hold pure calculation logic;
-- jobs seed or prepare database data.
+- jobs seed database data.
+
+## Docker/Compose Structure
+
+```text
+docker-compose.yml
+.env.compose.example
+.env.compose          local only, ignored by git
+backend/Dockerfile
+backend/.dockerignore
+frontend/Dockerfile
+frontend/.dockerignore
+frontend/nginx.conf.template
+```
+
+Compose services:
+
+```text
+frontend -> Nginx + React build on localhost:8080
+backend  -> FastAPI on localhost:8000
+Oracle   -> external container oraxe on localhost:1521
+```
+
+Inside Compose, frontend proxies to:
+
+```text
+backend:8000
+```
+
+The backend connects to external Oracle through:
+
+```text
+host.docker.internal:1521
+```
 
 ## Current Database Tables
 
@@ -198,74 +249,79 @@ GET /api/analytics/fuel-trends
 GET /api/analytics/forecast
 ```
 
+Current price responses include `recorded_at` so the frontend can show update
+dates instead of a live-data placeholder.
+
 ## Important Commands
 
 Backend tests:
 
 ```powershell
-cd backend
 python -m pytest
 ```
 
 Seed the configured database:
 
 ```powershell
-cd backend
 python -m app.jobs.seed_database
 ```
 
-The seed job uses `DATABASE_URL`, so it can target SQLite or Oracle Docker
-depending on the active `.env` file.
-
-Run backend:
+Run backend locally:
 
 ```powershell
-cd backend
-python -m uvicorn app.main:app --reload
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Run frontend:
+Run frontend locally:
 
 ```powershell
-cd frontend
 npm run dev
 ```
 
 Build frontend:
 
 ```powershell
-cd frontend
 npm run build
 ```
 
-If PowerShell blocks `npm.ps1`, use:
+Run full Docker app stack:
 
 ```powershell
-npm.cmd run dev
-npm.cmd run build
+docker compose --env-file .env.compose up --build
 ```
 
-## Oracle Docker Verification
+Check through frontend Nginx proxy:
 
-The existing database-backed application has been verified against Oracle
-Database running in Docker.
+```powershell
+Invoke-RestMethod http://127.0.0.1:8080/api/status
+```
 
-Verified:
-- backend connects through `DATABASE_URL`;
-- `seed_database` creates and populates Oracle tables;
-- API endpoints read Oracle data;
-- `/api/status` reports `databaseStatus=connected` and `environment=oracle-local`;
-- backend tests pass with `25 passed`;
-- frontend build/dev flow works against the Oracle-backed API.
+## Verified State
+
+Verified locally:
+- SQLite seed and tests;
+- Oracle Docker seed and tests;
+- frontend build;
+- backend Docker container -> Oracle Docker;
+- frontend Docker container -> Nginx `/api` proxy -> backend;
+- Docker Compose frontend + backend with external Oracle.
+
+Latest backend test result:
+
+```text
+26 passed
+```
 
 ## Next Project Target
 
-The next major checkpoint is to package or deploy the already verified app
-stack.
+The next major checkpoint is cloud preparation.
 
 Planned next steps:
-1. Add Dockerfile for the FastAPI backend.
-2. Add frontend production build serving, likely through Nginx.
-3. Add docker-compose or deployment notes for backend/frontend using an external Oracle database.
-4. Keep SQLite as the lightweight local/demo fallback.
-5. Prepare Oracle Autonomous Database configuration after the local app deployment flow is stable.
+1. Update runbook/docs for Docker Compose and deployment.
+2. Prepare OCI VM deployment checklist.
+3. Install Docker on OCI VM.
+4. Clone/pull project on VM.
+5. Create `.env.compose` on VM without committing secrets.
+6. Run Docker Compose in detached mode.
+7. Smoke test through the VM public IP.
+8. Later connect to Oracle Autonomous Database.
