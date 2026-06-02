@@ -1,0 +1,22 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    image: fuelfinder-backend
+    container_name: fuelfinder-backend
+    env_file:
+      - .env.compose
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+    image: fuelfinder-frontend
+    container_name: fuelfinder-frontend
+    environment:
+      BACKEND_UPSTREAM: backend:8000
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend

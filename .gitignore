@@ -31,3 +31,7 @@ backend/data/*.db-*
 # personal notes
 note.md
 today_plan.md
+
+# PASSWORD !!!not share
+
+.env.compose
