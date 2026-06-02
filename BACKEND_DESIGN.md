@@ -14,7 +14,7 @@ The backend is built with:
 - Alembic later for migrations;
 - SQLite for local/demo mode;
 - Oracle Database in Docker for local Oracle verification;
-- Oracle Autonomous Database later for cloud production mode;
+- Oracle Autonomous Database for cloud production mode;
 - Docker for backend/frontend packaging;
 - Nginx reverse proxy for frontend production serving;
 - object-oriented service, repository, algorithm, provider, and job layers.
@@ -55,8 +55,8 @@ version.
 It is not treated as a throwaway coursework shortcut.
 
 The database layer is isolated behind repository classes, so the project can
-later migrate to Oracle Autonomous Database or PostgreSQL without changing
-service and algorithm logic.
+run against SQLite, local Oracle Docker, or Oracle Autonomous Database without
+changing service and algorithm logic.
 
 ### Oracle Docker Direction
 Oracle Database in Docker is now a verified local database target.
@@ -85,12 +85,13 @@ Implementation notes:
   than SQLite-style `date(...)`.
 
 ### Oracle Cloud Direction
-Target cloud architecture:
+Verified cloud architecture:
 
 ```text
 Oracle Cloud Infrastructure
 
-Oracle Compute VM
+Oracle Compute VM + Caddy
+  -> HTTPS reverse proxy
   -> Docker container: Nginx + React build
   -> Docker container: FastAPI backend
 
@@ -439,11 +440,11 @@ Oracle Database in Docker
 Cloud production mode:
 
 ```text
-Oracle Autonomous Database
+Oracle Autonomous Database with wallet/mTLS
 ```
 
 The current implementation uses SQLAlchemy models that work with SQLite locally
-and Oracle Docker through configuration.
+Oracle Docker, and Oracle Autonomous Database through configuration.
 
 ## Planned Database Tables
 
@@ -1221,7 +1222,7 @@ flowchart TD
   Frontend["React frontend"] --> Routes["FastAPI routes"]
   Routes --> Services["Service classes"]
   Services --> Repositories["Repository classes"]
-  Repositories --> Database["SQLite local / Oracle Docker / Oracle cloud future"]
+  Repositories --> Database["SQLite local / Oracle Docker / Oracle Autonomous"]
 
   Services --> Ranking["Ranking strategies"]
   Services --> Distance["Distance calculator"]
@@ -1294,10 +1295,10 @@ Original planned backend implementation order:
 Current next implementation target:
 1. Keep SQLite local/demo mode working.
 2. Keep Oracle Docker mode working through `DATABASE_URL`.
-3. Keep Docker Compose app mode working with external Oracle.
-4. Update runbooks and deployment documentation.
-5. Prepare Oracle Cloud VM deployment.
-6. Prepare Oracle Autonomous Database configuration after VM deployment is stable.
+3. Keep Oracle Autonomous Database wallet mode working through environment config.
+4. Keep Docker Compose app mode working on OCI VM.
+5. Prepare final report material and deployment documentation.
+6. Rotate exposed demo credentials before final presentation.
 
 ## Testing Plan
 
@@ -1350,7 +1351,8 @@ Current Docker/Oracle status:
 - Oracle Docker is verified as an external database target.
 - Backend Docker image is verified against Oracle through `host.docker.internal`.
 - Frontend Docker image is verified with Nginx `/api` proxy.
-- Docker Compose is verified for frontend + backend with external Oracle.
+- Docker Compose is verified for frontend + backend with Oracle Autonomous Database.
+- OCI VM deployment is verified with DuckDNS + Caddy HTTPS.
 
 This keeps the project deployable to:
 - local development machine;

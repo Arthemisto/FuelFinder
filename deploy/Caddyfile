@@ -1,0 +1,21 @@
+{
+	servers {
+		trusted_proxies static private_ranges
+	}
+}
+
+fuelfinder.duckdns.org {
+	reverse_proxy 127.0.0.1:8080 {
+		header_down -Server
+		header_down -Via
+	}
+
+	header {
+		-Via
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "geolocation=(self)"
+	}
+}

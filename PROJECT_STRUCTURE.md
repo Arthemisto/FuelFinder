@@ -10,8 +10,10 @@ The project is built around:
 - SQLAlchemy models and repositories;
 - SQLite local/demo database;
 - verified Oracle Database in Docker support;
+- verified Oracle Autonomous Database cloud support;
 - Dockerized backend and frontend services;
-- Docker Compose app stack with an external Oracle container.
+- Docker Compose app stack;
+- HTTPS reverse proxy through Caddy on OCI VM.
 
 The backend is the runtime source of truth for:
 - fuel types;
@@ -48,6 +50,10 @@ Implemented:
 - frontend Docker image served by Nginx;
 - Nginx `/api` reverse proxy to backend;
 - Docker Compose stack for frontend + backend with external Oracle.
+- Oracle Autonomous Database wallet/mTLS connection verified;
+- OCI VM deployment verified;
+- DuckDNS + Caddy HTTPS proxy verified;
+- public HTTPS demo URL verified.
 
 Current limitations:
 - manual address/geocoding search is not implemented;
@@ -55,7 +61,8 @@ Current limitations:
 - demo data is synthetic, not real pump-price history;
 - `lastImportStatus` exists in the API schema but is not used in the public UI;
 - Alembic migrations are not configured yet;
-- Oracle Autonomous Database cloud setup is still future work.
+- address search still uses fixed coordinates or browser geolocation, not a
+  typed address geocoder.
 
 ## Runtime Data Flow
 
@@ -72,10 +79,11 @@ Production/container flow:
 
 ```text
 Browser
+  -> Caddy HTTPS reverse proxy
   -> Nginx frontend container
   -> /api reverse proxy
   -> FastAPI backend container
-  -> Oracle Docker database
+  -> Oracle Autonomous Database
 ```
 
 Database modes:
@@ -83,7 +91,7 @@ Database modes:
 ```text
 SQLite local/demo: backend/data/fuelfinder.db
 Oracle local: external Docker container oraxe
-Future cloud: Oracle Autonomous Database
+Oracle cloud: Oracle Autonomous Database wallet/mTLS
 ```
 
 ## Frontend Structure
@@ -171,8 +179,9 @@ Compose services:
 
 ```text
 frontend -> Nginx + React build on localhost:8080
-backend  -> FastAPI on localhost:8000
-Oracle   -> external container oraxe on localhost:1521
+backend  -> FastAPI bound to 127.0.0.1:8000 on host
+Oracle   -> local Docker Oracle or Oracle Autonomous Database
+Caddy    -> host HTTPS reverse proxy on 80/443
 ```
 
 Inside Compose, frontend proxies to:
@@ -181,11 +190,52 @@ Inside Compose, frontend proxies to:
 backend:8000
 ```
 
-The backend connects to external Oracle through:
+For local Oracle Docker, the backend connects through:
 
 ```text
 host.docker.internal:1521
 ```
+
+For Oracle Autonomous Database, the backend uses:
+
+```text
+DATABASE_URL=oracle+oracledb://FUELFINDER:<password>@fuelfinder_low
+ORACLE_WALLET_LOCATION=/opt/oracle/wallet
+ORACLE_WALLET_HOST_PATH=<host wallet directory>
+```
+
+## HTTPS Deployment
+
+Verified public deployment:
+
+```text
+https://fuelfinder.duckdns.org
+```
+
+Deployment shape:
+
+```text
+DuckDNS domain
+  -> OCI VM public IP
+  -> Caddy on ports 80/443
+  -> frontend container on 8080
+  -> Nginx /api proxy
+  -> backend container
+  -> Oracle Autonomous Database
+```
+
+The Caddy config is stored in:
+
+```text
+deploy/Caddyfile
+```
+
+Caddy provides:
+- automatic HTTPS;
+- HTTP to HTTPS redirects;
+- reverse proxy to the frontend container;
+- basic security headers;
+- removal of upstream `Server` and `Via` response headers.
 
 ## Current Database Tables
 
@@ -306,6 +356,13 @@ Verified locally:
 - frontend Docker container -> Nginx `/api` proxy -> backend;
 - Docker Compose frontend + backend with external Oracle.
 
+Verified in cloud:
+- Oracle Autonomous Database wallet/mTLS connection;
+- backend API smoke checks against cloud database;
+- full backend test run against cloud database;
+- OCI VM Docker Compose deployment;
+- HTTPS public frontend through DuckDNS + Caddy.
+
 Latest backend test result:
 
 ```text
@@ -314,14 +371,11 @@ Latest backend test result:
 
 ## Next Project Target
 
-The next major checkpoint is cloud preparation.
+The next major checkpoint is final project reporting and hardening.
 
 Planned next steps:
-1. Update runbook/docs for Docker Compose and deployment.
-2. Prepare OCI VM deployment checklist.
-3. Install Docker on OCI VM.
-4. Clone/pull project on VM.
-5. Create `.env.compose` on VM without committing secrets.
-6. Run Docker Compose in detached mode.
-7. Smoke test through the VM public IP.
-8. Later connect to Oracle Autonomous Database.
+1. Update final report material and architecture diagrams.
+2. Rotate exposed demo credentials/tokens before final presentation.
+3. Keep `.env`, `.env.compose`, SSH keys, and wallet files out of git.
+4. Optionally add a production deployment script/runbook.
+5. Optionally replace DuckDNS with a owned domain.

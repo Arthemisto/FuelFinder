@@ -92,7 +92,7 @@ compiled frontend bundle.
 From the project root, Docker Compose starts:
 - frontend container;
 - backend container;
-- external Oracle Docker database through `host.docker.internal`.
+- Oracle Docker or Oracle Autonomous Database through backend configuration.
 
 Run:
 
@@ -112,11 +112,39 @@ Quick API smoke check through Nginx:
 Invoke-RestMethod http://127.0.0.1:8080/api/status
 ```
 
+## HTTPS Deployment
+
+The verified public deployment uses:
+
+```text
+https://fuelfinder.duckdns.org
+```
+
+Deployment flow:
+
+```text
+Browser
+  -> Caddy HTTPS proxy on OCI VM
+  -> frontend Nginx container on host port 8080
+  -> /api proxy to backend container
+  -> Oracle Autonomous Database
+```
+
+The Caddy config is stored in:
+
+```text
+deploy/Caddyfile
+```
+
+Browser geolocation requires HTTPS on public deployments. The HTTPS deployment
+therefore supports `Use current location`, while plain `http://<public-ip>` does
+not.
+
 ## Current UI Notes
 
 - Search starts from the locked default center `Riga, Latvia`.
 - `Use current location` can replace the default coordinates when browser
-  geolocation is allowed.
+  geolocation is allowed over HTTPS.
 - Results and station lists display backend `recorded_at` price timestamps.
 - Analytics history filtering is handled on the frontend.
 - Forecast data is marked as demo algorithm output, not a real market promise.

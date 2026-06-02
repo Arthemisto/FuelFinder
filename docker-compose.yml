@@ -7,7 +7,7 @@ services:
     env_file:
       - .env.compose
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     volumes:
       - ${ORACLE_WALLET_HOST_PATH}:/opt/oracle/wallet:ro
 

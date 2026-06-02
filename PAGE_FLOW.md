@@ -11,9 +11,11 @@ of truth. Pages load data through `frontend/src/api/fuelFinderApi.ts`.
 The same page flow has been verified with:
 - SQLite local/demo database;
 - Oracle Database running in Docker;
+- Oracle Autonomous Database in OCI;
 - backend Docker container;
 - frontend Nginx container with `/api` reverse proxy;
-- Docker Compose frontend + backend stack with external Oracle.
+- Docker Compose frontend + backend stack;
+- Caddy HTTPS reverse proxy on OCI VM.
 
 ## Runtime Data Flow
 
@@ -30,6 +32,7 @@ Container/production-like:
 
 ```text
 Browser
+  -> Caddy HTTPS reverse proxy
   -> Nginx frontend container
   -> /api reverse proxy
   -> FastAPI backend container
@@ -41,6 +44,7 @@ Current database targets:
 ```text
 SQLite local/demo
 Oracle Database in Docker
+Oracle Autonomous Database
 ```
 
 ## Main User Flow
@@ -125,6 +129,11 @@ Current behavior:
 - if permission is denied/unavailable, the page falls back to Riga center;
 - `Find stations` sends the request to `App`;
 - `App` stores the request and opens `ResultsPage`.
+
+Public deployment note:
+- browser geolocation requires HTTPS;
+- `https://fuelfinder.duckdns.org` supports the browser permission prompt;
+- plain public-IP HTTP access does not support browser geolocation.
 
 Current limitation:
 - manual location text and street/city geocoding are intentionally not
@@ -251,7 +260,7 @@ flowchart TD
   AnalyticsPage -->|API trends/forecast| Backend
   StatusPanel -->|API status| Backend
   MapPage -->|API stations/search| Backend
-  Backend --> Database["SQLite local / Oracle Docker verified"]
+  Backend --> Database["SQLite / Oracle Docker / Oracle Autonomous"]
   ResultsPage -->|Map stationId| App
   StationsPage -->|Map stationId| App
   App -->|selectedStationId| MapPage
@@ -263,21 +272,24 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-  Browser["Browser http://127.0.0.1:8080"] --> Nginx["Frontend container / Nginx"]
+  Browser["Browser https://fuelfinder.duckdns.org"] --> Caddy["Caddy HTTPS proxy"]
+  Caddy --> Nginx["Frontend container / Nginx on 8080"]
   Nginx -->|static files| ReactBuild["React build"]
   Nginx -->|/api proxy| Backend["Backend container / FastAPI"]
-  Backend --> Oracle["External Oracle Docker container oraxe"]
+  Backend --> Oracle["Oracle Autonomous Database"]
 ```
 
 ## Verified Flow
 
-The current flow has been smoke-tested as:
+The current cloud flow has been smoke-tested as:
 
 ```text
 Browser
+  -> DuckDNS domain
+  -> Caddy HTTPS proxy
   -> frontend Nginx container
   -> backend FastAPI container
-  -> Oracle Database running in Docker
+  -> Oracle Autonomous Database
 ```
 
 The same frontend/backend API contracts work with either SQLite or Oracle as

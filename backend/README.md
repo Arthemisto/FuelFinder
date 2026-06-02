@@ -3,10 +3,10 @@
 ## Purpose
 
 This runbook is the short operational guide for running the FuelFinder backend
-locally with either SQLite or Oracle Database in Docker.
+locally with SQLite, local Oracle Docker, or Oracle Autonomous Database.
 
 The backend uses one code path for both databases. The active database is chosen
-through `DATABASE_URL` in `backend/.env`.
+through `DATABASE_URL` in `backend/.env` or `.env.compose`.
 
 Do not commit `backend/.env`; it can contain real credentials.
 
@@ -73,6 +73,39 @@ Typical container ports:
 ```text
 localhost:1521 -> Oracle listener
 localhost:5500 -> Oracle Enterprise Manager
+```
+
+### Oracle Autonomous Database Wallet Mode
+
+Use this for Oracle Cloud Autonomous Database through wallet/mTLS:
+
+```env
+APP_NAME=FuelFinder API
+APP_VERSION=1.0.0
+ENVIRONMENT=oracle-cloud-local-test
+
+DATABASE_URL=oracle+oracledb://FUELFINDER:your_db_password@fuelfinder_low
+
+ORACLE_WALLET_LOCATION=C:\Users\your_user\Downloads\Wallet_FUELFINDER
+ORACLE_WALLET_PASSWORD=your_wallet_password
+
+CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080,http://127.0.0.1:8080,https://fuelfinder.duckdns.org
+```
+
+The wallet directory must contain:
+
+```text
+cwallet.sso
+ewallet.p12
+ewallet.pem
+sqlnet.ora
+tnsnames.ora
+```
+
+The deployed OCI VM mounts the wallet into the backend container at:
+
+```text
+/opt/oracle/wallet
 ```
 
 ## Install Dependencies
@@ -194,7 +227,8 @@ Latest verified result:
 ```
 
 Both SQLite mode and Oracle Docker mode have been verified with the same test
-suite.
+suite. Oracle Autonomous Database has also been verified with the same suite;
+the cloud run is slower because it uses a remote database and mTLS.
 
 ## Useful Smoke Checks
 
@@ -306,7 +340,7 @@ The root-level Compose stack runs:
 ```text
 frontend container
 backend container
-external Oracle Docker container oraxe
+Oracle Docker or Oracle Autonomous Database
 ```
 
 Create local `.env.compose` from `.env.compose.example` and fill the real
@@ -342,6 +376,75 @@ Open:
 http://127.0.0.1:8080
 ```
 
+For local production-style HTTPS on the OCI VM, Caddy listens on host ports
+`80` and `443`, while the frontend container stays on host port `8080`.
+
+Current public demo:
+
+```text
+https://fuelfinder.duckdns.org
+```
+
+The Caddy config is tracked at:
+
+```text
+deploy/Caddyfile
+```
+
+The backend port is bound to localhost only:
+
+```text
+127.0.0.1:8000->8000
+```
+
+This keeps the backend out of direct public internet exposure while still
+allowing Nginx/Caddy proxy traffic.
+
+## OCI VM Deployment Notes
+
+Verified OCI deployment shape:
+
+```text
+OCI VM Oracle Linux 9
+Docker + Docker Compose
+Caddy HTTPS reverse proxy
+DuckDNS domain
+Oracle Autonomous Database wallet/mTLS
+```
+
+Small Always Free VM memory note:
+- `VM.Standard.E2.1.Micro` has 1 GB RAM;
+- Docker install/build may need additional swap;
+- verified swap file size: 4 GB.
+
+Minimal VM setup commands used:
+
+```bash
+sudo dd if=/dev/zero of=/swapfile bs=1M count=4096 status=progress
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+```
+
+Docker was installed through the Docker CE repository on Oracle Linux 9.
+
+Required public ingress rules:
+
+```text
+TCP 22  SSH
+TCP 80  HTTP / Let's Encrypt redirect
+TCP 443 HTTPS
+```
+
+The VM firewall must also allow HTTP and HTTPS:
+
+```bash
+sudo firewall-cmd --permanent --add-service=http
+sudo firewall-cmd --permanent --add-service=https
+sudo firewall-cmd --reload
+```
+
 ## Oracle Compatibility Notes
 
 The codebase includes small compatibility choices so the same backend works with
@@ -354,14 +457,12 @@ SQLite and Oracle:
 - analytics date grouping is handled in Python instead of database-specific
   date SQL.
 
-## Next Deployment Work
+## Final Deployment Hygiene
 
-The next infrastructure checkpoint is cloud preparation:
+Before final presentation:
 
-1. Prepare Oracle Cloud VM.
-2. Install Docker and Docker Compose.
-3. Clone/pull the project.
-4. Create `.env.compose` on the VM.
-5. Run Compose in detached mode.
-6. Smoke test through the VM public IP.
-7. Later prepare Oracle Autonomous Database configuration.
+1. Rotate any exposed demo credentials and DuckDNS tokens.
+2. Keep `.env`, `.env.compose`, wallet files, and SSH keys out of git.
+3. Verify `https://fuelfinder.duckdns.org/api/status`.
+4. Verify browser geolocation over HTTPS.
+5. Run a UI smoke test across Search, Results, Map, Analytics, and All Stations.
