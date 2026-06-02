@@ -8,6 +8,9 @@ type SearchPageProps = {
   onSearch: (request: SearchRequest) => void
 }
 
+const defaultLocationLabel = 'Riga, Latvia'
+const defaultLocationStatus = 'Default search center: Riga, Latvia.'
+
 const fallbackFuelTypeOptions: { value: FuelType; label: string }[] = [
   { value: 'diesel', label: 'Diesel' },
   { value: 'petrol95', label: 'Petrol 95' },
@@ -18,7 +21,7 @@ const fallbackFuelTypeOptions: { value: FuelType; label: string }[] = [
 ]
 
 export function SearchPage({ onSearch }: SearchPageProps) {
-  const [location, setLocation] = useState('Riga, Latvia')
+  const [location, setLocation] = useState(defaultLocationLabel)
   const [radiusKm, setRadiusKm] = useState(5)
   const [fuelType, setFuelType] = useState<FuelType>('diesel')
   const [fuelTypeOptions, setFuelTypeOptions] = useState(
@@ -28,7 +31,7 @@ export function SearchPage({ onSearch }: SearchPageProps) {
     latitude: number
     longitude: number
   } | null>(null)
-  const [locationStatus, setLocationStatus] = useState<string | null>(null)
+  const [locationStatus, setLocationStatus] = useState(defaultLocationStatus)
 
   useEffect(() => {
     const loadFuelTypes = async () => {
@@ -74,9 +77,11 @@ export function SearchPage({ onSearch }: SearchPageProps) {
 
         setCoordinates({ latitude, longitude })
         setLocation(`Current location: ${latitude}, ${longitude}`)
-        setLocationStatus('Radius filtering is active.')
+        setLocationStatus('Current location selected.')
       },
       () => {
+        setCoordinates(null)
+        setLocation(defaultLocationLabel)
         setLocationStatus('Location permission was denied or unavailable.')
       },
     )
@@ -84,24 +89,12 @@ export function SearchPage({ onSearch }: SearchPageProps) {
 
   return (
     <section className="page-content search-page">
-      <h1>Find nearby fuel stations</h1>
-      <p>
-        Search by location, fuel type, and distance to compare the best available
-        station options.
-      </p>
+      <h1 className="sr-only">Find nearby fuel stations</h1>
 
       <form className="search-form">
         <label className="search-form-wide">
           Location
-          <input
-            type="text"
-            value={location}
-            onChange={(event) => {
-              setLocation(event.target.value)
-              setCoordinates(null)
-              setLocationStatus('Use current location to apply radius filtering.')
-            }}
-          />
+          <input type="text" value={location} readOnly />
         </label>
 
         <label>
@@ -132,9 +125,7 @@ export function SearchPage({ onSearch }: SearchPageProps) {
           </select>
         </label>
 
-        {locationStatus && (
-          <p className="location-status">{locationStatus}</p>
-        )}
+        <p className="location-status">{locationStatus}</p>
 
         <div className="search-actions">
           <button type="button" className="primary-action" onClick={handleSearch}>
