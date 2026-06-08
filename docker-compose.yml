@@ -4,6 +4,7 @@ services:
       context: ./backend
     image: fuelfinder-backend
     container_name: fuelfinder-backend
+    restart: unless-stopped
     env_file:
       - .env.compose
     ports:
@@ -16,6 +17,7 @@ services:
       context: ./frontend
     image: fuelfinder-frontend
     container_name: fuelfinder-frontend
+    restart: unless-stopped
     environment:
       BACKEND_UPSTREAM: backend:8000
     ports:
