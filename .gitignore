@@ -37,3 +37,4 @@ today_plan.md
 .env.compose
 # runbook
 OCI_RESTART_RUNBOOK.md
+DEPLOYMENT_REPORT_NOTES.md
